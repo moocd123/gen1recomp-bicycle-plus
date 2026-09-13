@@ -1,0 +1,20 @@
+# OS / editors
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Local test/runtime material
+runtime/
+upstream/
+roms/
+*.gb
+*.gbc
+*.sav
+*.state
+
+# Generated/local packaging
+*.tmp
+*.log
