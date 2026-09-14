@@ -1,20 +1,16 @@
-# Bicycle Plus v1.5.0 compatibility
+# Bicycle Plus v1.6.0 compatibility
 
-**v1.5.0 adds the colour picker only.** The original bicycle-part masks, audio and automatic-mount modules are unchanged. New colour/menu/render tests use native engine modules with software boundaries; they are not a new all-mods/all-devices gameplay certification. See [VERIFICATION.md](VERIFICATION.md).
+The manifest retains **Gen1ReComp++ >=0.2.59**, mod API 2, and Red, Blue, Yellow, Gold, Silver and Crystal. The open version range prevents version-number-only rejection; it does not guarantee compatibility with future breaking engine changes.
 
-## Engine range and update discovery
+The GitHub source remains `moocd123/gen1recomp-bicycle-plus`. Users with v1.4.2 or later can use Check for updates / Update All. Older packages need a one-time manual installation to acquire that source. In-app downloads depend on the host's network support; the mod contains portable Lua rather than platform-specific binaries.
 
-The manifest declares **Gen1ReComp++ `>=0.2.59`**, **mod API 2**, and all six editions: **Red, Blue, Yellow, Gold, Silver and Crystal**. There is no upper engine-version limit. This avoids rejection solely because a newer engine version number was not listed; it does not certify future gameplay compatibility or bypass the required API/permission checks.
+## This update
 
-The `github` field is **`moocd123/gen1recomp-bicycle-plus`**. The native launcher uses that field for update discovery and prefers the asset `bicycle_plus-<version>.zip`. Older Bicycle Plus packages lack the field and need one manual installation of v1.4.2 or newer before future updates can be discovered this way.
+The audio, audio-menu and automatic-mounting modules are unchanged. HANDLEBARS is added with separate Gen 1/Gen 2-shaped mappings selected from the active artwork, including Trainer Skins in Gen 1 games. Wheel-border ownership and protected shared shoe pixels are corrected. RESET COLOURS affects only six bicycle-colour settings. Existing values are retained, but the corrected regions can look different under an existing EDGE/DETAILS selection.
 
-The mod is portable Lua and is intended for any supported host platform with the necessary mod API. In-app download availability additionally depends on the host platform's network transport. Manual ZIP installation remains available.
+The supplied Trainer Skins v0.2.0 archive is verified by hash and its actual code supplies the ten accent references. The old README is not used to infer how many colours exist. Native source-pixel checks include true-colour and quantised trainer sheets; the publication workflow also checks the earlier v0.1.0 artwork. See [VERIFICATION.md](VERIFICATION.md) and [BICYCLE_REGIONS.md](docs/BICYCLE_REGIONS.md).
 
-## Verification scope
-
-In v1.5.0 the colour editor/lookup changes and gains two new modules; the audio, audio-menu, automatic-mount and part-mask files remain identical to v1.4.2. The new checks exercise the actual supplied launcher and updater Lua modules in a headless harness, with network/download/UI boundaries simulated. The v0.2.60 source blobs for Manifest, ModUpdate and RomImporter match those in the supplied v0.2.59 package. This does not constitute running the complete v0.2.60 application or every device.
-
-Future changes to internal audio, rendering, menus, movement or mod interfaces can still require a code update. The open version range cannot prevent those changes. See [VERIFICATION.md](VERIFICATION.md).
+These tests use actual source images and native Lua modules, with software graphics/input/network boundaries. They are not a new physical-device gameplay or complete companion-mod-stack test.
 
 ## Historical companion checks on Gen1ReComp++ v0.2.59
 

@@ -1,4 +1,4 @@
--- Bicycle Plus: independent wheel, stripe, centre, edge and detail colours.
+-- Bicycle Plus: independent wheel, stripe, centre, edge, detail and handlebar colours.
 -- Pixel ownership is classified on the untouched source sheet so trainer
 -- palettes cannot collapse the two wheel shades into one. Rider art stays
 -- outside the verified bicycle masks; other renderers keep their full chain.
@@ -91,8 +91,8 @@ function Colours.init(mod, getSetting, Parts, Hardware)
   end
 
   local partKeys = {rims="bike_colour", stripes="bike_stripes_colour",
-    centres="bike_centres_colour", tyres="bike_tyres_colour", frame="bike_frame_colour"}
-  local partOrder = {"rims", "stripes", "centres", "tyres", "frame"}
+    centres="bike_centres_colour", tyres="bike_tyres_colour", frame="bike_frame_colour", handlebars="bike_handlebars_colour"}
+  local partOrder = {"rims", "stripes", "centres", "tyres", "frame", "handlebars"}
   local function settings(rimOverride)
     local choices, active = {}, false
     for _, part in ipairs(partOrder) do
@@ -285,7 +285,7 @@ function Colours.init(mod, getSetting, Parts, Hardware)
     local variants = cache[original]
     if not variants then variants = {items={},order={}}; cache[original] = variants end
     -- Each native palette has its own original image; image identity plus
-    -- source path, mask identity and all five choices fully describe a bake.
+    -- source path, mask identity and all six choices fully describe a bake.
     local key = tostring(renderer.def.image) .. ":" .. tostring(masks)
     for _, part in ipairs(partOrder) do key = key .. ":" .. choices[part] end
     if variants.items[key] ~= nil then return variants.items[key] or nil end
@@ -471,13 +471,22 @@ function Colours.init(mod, getSetting, Parts, Hardware)
     return previewCache.sprite
   end
 
+  -- Choose the mapping from the artwork, not just the game edition.
+  function api.artStyle(game)
+    local renderer=bikeForPreview(game or liveGame)
+    local masks=renderer and maskFor(renderer)
+    if masks==RED then return "GEN 1" end
+    if masks==GEN2 then return "GEN 2" end
+    return renderer and "CUSTOM" or "NONE"
+  end
+
   function api.status(game)
     if lastError then return "Colour readback unavailable" end
     if api.needsColourMode(game) then return "Requires Advanced/GBC colour" end
     local renderer = bikeForPreview(game or liveGame)
     if not renderer then return "Load a game to preview" end
     if not maskFor(renderer) then return "Custom bike art kept original" end
-    return "Bike details only; rider unchanged"
+    return "Bicycle colour regions"
   end
 
   -- Draw three live-skin directions. At scale 2 the preview occupies 128x32.

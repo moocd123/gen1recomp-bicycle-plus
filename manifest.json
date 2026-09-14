@@ -1,7 +1,7 @@
 {
   "id": "bicycle_plus",
   "name": "Bicycle Plus",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "api": 2,
   "entry": "main.lua",
   "profile": "content",
@@ -23,6 +23,6 @@
     "engine_internals"
   ],
   "affects_link": false,
-  "description": "Automatic cycling, normal/cycling audio profiles, and five-part bicycle colours with a deduplicated preset picker and all 32,768 RGB555 colours. Original artwork and Trainer Skins handling retained.",
+  "description": "Automatic cycling, independent cycling audio, six-part bicycle colours, handlebars, colour reset and hex-sorted system/trainer palettes.",
   "github": "moocd123/gen1recomp-bicycle-plus"
 }

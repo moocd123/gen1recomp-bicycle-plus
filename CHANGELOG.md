@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.6.0 — Handlebars and organised colours
+
+- Add independent HANDLEBARS and a colour-only, default-NO confirmed reset.
+- Correct EDGE/DETAILS ownership, protect shared pedal/shoe boundaries and report the automatically selected Gen 1/Gen 2 artwork family.
+- Organise hex-sorted unique presets into DMG, Pocket, Light, GBC and Trainer sections, with an All Presets view and the complete RGB555 grid.
+- Replace SKIN abbreviations with full TRAINER colour names and verify all ten accents against the supplied v0.2.0 code.
+- Retain existing saved values, Original, the updater source and all audio/automatic-mounting code.
+- Add actual-source pixel checks and native menu/reset/section tests; no new physical-device gameplay claim.
+
 ## 1.5.0 — Hardware-limited colour picker
 
 - Add all 32,768 RGB555 colours and a native-button colour-grid editor.

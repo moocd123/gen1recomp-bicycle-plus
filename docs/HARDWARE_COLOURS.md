@@ -23,7 +23,7 @@ Every possible GBC game palette colour is available in the full RGB555 grid, eve
 
 DMG, Pocket and Light hardware exposes four monochrome shade levels. Its physical LCD tint, contrast, lighting and backlight are not fixed RGB888 colour registers. The preset tints are therefore labelled approximations, not exact measurements. A modern screen's colour correction can also affect perceived colours.
 
-The picker limits **individual selected colour values**. It does not impose the original hardware's per-tile palette or simultaneous-colour limits on the mod's five independent bicycle parts. It does not resize the sprites, change their masks, or replace the trainer's colours.
+The picker limits **individual selected colour values**. It does not impose the original hardware's per-tile palette or simultaneous-colour limits on the mod's six independent bicycle parts. The picker does not resize sprites or replace the trainer's colours. The corrected per-part masks are documented separately in BICYCLE_REGIONS.md.
 
 ## Sources
 
@@ -33,3 +33,10 @@ The picker limits **individual selected colour values**. It does not impose the 
 - [Gen1ReComp++ v0.2.60 built-in Game Boy palettes](https://github.com/bryanthaboi/gen1recomp/blob/v0.2.60/data/gb_palettes.lua)
 
 Only numerical colour references and source code are shipped, not ROMs, extracted sprites, or soundtrack files.
+
+
+## v1.6.0 organisation
+
+The catalogue is partitioned into DMG, Pocket, Light, GBC and Trainer sections. DMG/Pocket/Light references take precedence when an identical preset is shared; Trainer references take precedence over generic GBC/quick names. Every preset has exactly one section. All Presets reuses those rows. The complete hardware grid still covers all 32,768 RGB555 values.
+
+Rows sort by expanded RRGGBB hex code within each section. Original is a separate preserve-artwork action and stays first in the picker. Names use TRAINER rather than SKIN or TS. All ten accents parsed from the supplied v0.2.0 source are checked, including references that differ from its earlier three-colour release. Sorting and naming do not rewrite saved canonical IDs.

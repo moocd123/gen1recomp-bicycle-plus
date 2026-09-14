@@ -8,7 +8,7 @@ return function(mod)
   local Hardware = module("hardware_colours")
   local colourChoices = Hardware.quickChoices
   local colourKeys = {bike_colour=true, bike_stripes_colour=true,
-    bike_centres_colour=true, bike_tyres_colour=true, bike_frame_colour=true}
+    bike_centres_colour=true, bike_tyres_colour=true, bike_frame_colour=true, bike_handlebars_colour=true}
   local spellingChoices = {{"ENGLISH UK", "uk"}, {"ENGLISH US", "us"}}
   local filterChoices = {{"OFF", 0}, {"1X", 1}, {"2X", 2}, {"3X", 3}}
   local ridingMusicChoices = {{"BICYCLE", "bicycle"}, {"AREA", "area"}, {"BOTH", "both"}}
@@ -20,7 +20,7 @@ return function(mod)
   }
   local defaults = {auto_mount=true, bike_volume=7, bike_filter=0,
     sfx_filter=0, bike_colour="original", bike_stripes_colour="original",
-    bike_centres_colour="original", bike_tyres_colour="original", bike_frame_colour="original",
+    bike_centres_colour="original", bike_tyres_colour="original", bike_frame_colour="original", bike_handlebars_colour="original",
     spelling="uk", riding_music="both",
     riding_area_volume=-1, riding_area_filter=-1, riding_sfx_volume=-1, riding_sfx_filter=-1}
   local function allowed(choices, value)
@@ -74,6 +74,8 @@ return function(mod)
         default="original", choices=choicesFor("bike_tyres_colour")},
       {key="bike_frame_colour", type="choice", label="DETAILS " .. colourWord(),
         default="original", choices=choicesFor("bike_frame_colour")},
+      {key="bike_handlebars_colour", type="choice", label="HANDLEBARS " .. colourWord(),
+        default="original", choices=choicesFor("bike_handlebars_colour")},
       {key="bike_volume", type="number", label="BIKE VOLUME", default=7,
         min=0, max=7, step=1},
       {key="riding_music", type="choice", label="MUSIC ON BIKE", default="both",
@@ -277,68 +279,11 @@ return function(mod)
     return self
   end})
 
-  mod.content.screens:register("BicyclePlusColours", {new=function(game)
-    migrateSettings(game)
-    local self={game=game,isOpaque=true,isModOptions=true,timer=0,index=1,
-      sgbPalettes=previewPalette,bicyclePlusPreviewRect={x=16,y=24,scale=2},
-      rows={
-        {key="bike_colour",label=function() return "WHEEL" end},
-        {key="bike_stripes_colour",label=function() return "STRIPE" end},
-        {key="bike_centres_colour",label=centreWord},
-        {key="bike_tyres_colour",label=function() return "EDGE" end},
-        {key="bike_frame_colour",label=function() return "DETAILS" end},
-      }}
-    function self:update(dt)
-      self.timer=self.timer+(dt or 0)
-      local input=self.game.input
-      if input:wasPressed("b") or input:wasPressed("start") then
-        self.game.stack:pop() return
-      end
-      if input:wasPressed("a") then
-        local row=self.rows[self.index]
-        picker.open(self.game,row.key,row.label())
-        return
-      end
-      if input:wasPressed("select") and colours.needsColourMode(self.game) then
-        colours.enableColourMode(self.game); return
-      end
-      if input:wasPressed("up") then self.index=(self.index-2)%#self.rows+1
-      elseif input:wasPressed("down") then self.index=self.index%#self.rows+1
-      elseif input:wasPressed("left") or input:wasPressed("right") then
-        local key=self.rows[self.index].key
-        setSetting(self.game,key,cycle(colourChoices,getSetting(key),input:wasPressed("left") and -1 or 1))
-      end
-    end
-    function self:draw()
-      local G=love.graphics
-      G.setColor(1,1,1,1) G.rectangle("fill",0,0,160,144)
-      Font.drawBox(0,0,20,18)
-      G.setColor(0,0,0,1)
-      local title = "BICYCLE " .. colourWord()
-      Font.draw(title,math.floor((160-#title*8)/2),8)
-      G.setColor(1,1,1,1)
-      local rect=self.bicyclePlusPreviewRect
-      -- Read all five saved parts together so the preview and world agree.
-      local ok,status=colours.drawPreview(self.game,rect.x,rect.y,rect.scale,self.timer)
-      G.setColor(0,0,0,1)
-      if ok == false then Font.draw("ENTER GAME FIRST",16,56)
-      elseif status == "Custom bike art kept original" then Font.draw("ART KEPT ORIGINAL",12,56)
-      elseif status == "Colour readback unavailable" then Font.draw(colourWord() .. " NOT READY",16,56) end
-      for i,row in ipairs(self.rows) do
-        local y=64+(i-1)*11
-        local value=Hardware.label(getSetting(row.key))
-        Font.draw(row.label(),16,y)
-        Font.draw(value,144-#value*8,y)
-        if i==self.index then Font.drawCode(Theme.cursor,8,y) end
-      end
-      Font.draw("A:PICK LR:QUICK",16,120)
-      if colours.needsColourMode(self.game) then
-        Font.draw("SEL:" .. colours.colourModeName(self.game) .. " B:BACK",4,128)
-      else Font.draw("B:BACK  SAVED",24,128) end
-      G.setColor(1,1,1,1)
-    end
-    return self
-  end})
+  local controls = module("colour_controls").init(mod, {
+    hardware=Hardware, colours=colours, picker=picker, getSetting=getSetting,
+    setSetting=setSetting, migrate=migrateSettings, refreshOptions=defineOptions,
+    colourWord=colourWord, centreWord=centreWord, palette=palette, previewPalette=previewPalette,
+  })
 
   mod.hooks:wrap("ui.options.rows", function(next,game,rows)
     migrateSettings(game)
@@ -386,6 +331,8 @@ return function(mod)
   mod.exports.getSetting=getSetting
   mod.exports.hardwareColours=Hardware
   mod.exports.openColourPicker=picker.open
+  mod.exports.resetColours=controls.reset
+  mod.exports.bikeArtStyle=colours.artStyle
   mod.exports.setSetting=setSetting
   mod.exports.status=function()
     return {automount=automount.status and automount.status(),

@@ -66,6 +66,37 @@ function P.label(value)
   value=P.canonical(value)
   return names[value] or (value and value~="original" and P.hex(value):sub(2) or "ORIGINAL")
 end
+-- Hex order means displayed RRGGBB, not the packed BGR555 storage word.
+function P.codeKey(value)
+  local c=P.rgb(value)
+  return c and c[1]*65536+c[2]*256+c[3] or -1
+end
+function P.sortPresets(rows)
+  for _,row in ipairs(rows) do row.sortKey=P.codeKey(row.id) end
+  table.sort(rows,function(a,b)return a.sortKey<b.sortKey end)
+  return rows
+end
+table.sort(P.quickChoices,function(a,b)return P.codeKey(a[2])<P.codeKey(b[2])end)
+table.sort(P.legacyOptions,function(a,b)return P.codeKey(a.id)<P.codeKey(b.id)end)
+-- Hardware sections are in release order. Trainer is a reference section,
+-- not a console. Every preset has one owner; exact matches are merged.
+P.sectionDefs={{id="dmg",label="DMG"},{id="pocket",label="POCKET"},
+ {id="light",label="LIGHT"},{id="gbc",label="GBC"},{id="trainer",label="TRAINER"}}
+function P.sections(rows)
+  local out,byId={},{}
+  for _,def in ipairs(P.sectionDefs)do
+    local group={id=def.id,label=def.label,rows={}}
+    out[#out+1]=group;byId[def.id]=group
+  end
+  for _,row in ipairs(rows)do
+    if row.id~="original" then
+      local group=byId[row.section or "gbc"]
+      group.rows[#group.rows+1]=row
+    end
+  end
+  return out
+end
+
 -- SameBoy Core/display.c: four LCD shades only, not the fifth LCD-off entry.
 -- These are screen-look approximations, not programmable DMG colour registers.
 -- Snap them to the same RGB555 catalogue instead of adding 24-bit exceptions.
@@ -76,13 +107,13 @@ P.lcd = {
   {"GREY",{{0,0,0},{85,85,85},{170,170,170},{255,255,255}}},
 }
 P.trainer = {
-  {"SKIN 010 RED",{248,56,8}}, {"SKIN 010 GREEN",{0,132,0}},
-  {"SKIN 010 BLUE",{0,0,255}}, {"SKIN 020 RED",{255,0,0}},
-  {"SKIN 020 GREEN",{58,189,25}}, {"SKIN 020 BLUE",{82,74,255}},
-  {"SKIN 020 YELLOW",{173,90,0}}, {"SKIN 020 PURPLE",{139,0,186}},
-  {"SKIN 020 ORANGE",{191,57,0}}, {"SKIN 020 CYAN",{88,184,248}},
-  {"SKIN 020 PINK",{249,0,170}}, {"SKIN 020 BROWN",{58,44,19}},
-  {"SKIN 020 GREY",{75,75,75}}, {"SKIN HIGHLIGHT",{239,156,107}},
+  {"TRAINER RED",{248,56,8}}, {"TRAINER GREEN",{0,132,0}},
+  {"TRAINER BLUE",{0,0,255}}, {"TRAINER RED",{255,0,0}},
+  {"TRAINER GREEN",{58,189,25}}, {"TRAINER BLUE",{82,74,255}},
+  {"TRAINER YELLOW",{173,90,0}}, {"TRAINER PURPLE",{139,0,186}},
+  {"TRAINER ORANGE",{191,57,0}}, {"TRAINER CYAN",{88,184,248}},
+  {"TRAINER PINK",{249,0,170}}, {"TRAINER BROWN",{58,44,19}},
+  {"TRAINER GREY",{75,75,75}}, {"TRAINER PEACH",{239,156,107}},
 }
 local hardwarePacks = {
   ["GB Color (Combo Palettes)"]=true,
@@ -102,28 +133,31 @@ local function sortedKeys(t)
 end
 -- Returns unique swatches plus source aliases. Existing skin colours may match
 -- ORIGINAL at runtime: ORIGINAL is deliberately retained as a semantic option.
-function P.presets(game, resolve)
+function P.presets(game, resolve, saved)
   resolve=resolve or require
   local out={{id="original",label="ORIGINAL",sources={"UNMODIFIED ART"}}}
   local byId={original=out[1]}
-  local function addRGB(label,c)
+  local rank={dmg=1,pocket=2,light=3,trainer=4,gbc=5}
+  local function addRGB(label,c,section)
+    section=section or "gbc"
     if type(c)~="table" then return end
     local id=P.fromRGB(c[1],c[2],c[3])
     if not id then return end
     local row=byId[id]
     if not row then
-      row={id=id,label=label,rgb=P.rgb(id),sources={},sourceSet={}}
+      row={id=id,label=label,rgb=P.rgb(id),section=section,sources={},sourceSet={}}
       byId[id]=row; out[#out+1]=row
     end
+    if rank[section]<rank[row.section] then row.section=section;row.label=label end
     if not row.sourceSet[label] then
       row.sources[#row.sources+1]=label; row.sourceSet[label]=true
     end
   end
   for _,row in ipairs(P.legacy) do addRGB(row[2],row[3]) end
   for _,group in ipairs(P.lcd) do
-    for i,c in ipairs(group[2]) do addRGB(group[1].." SHADE "..i,c) end
+    for i,c in ipairs(group[2]) do addRGB(group[1].." SHADE "..i,c,({DMG="dmg",POCKET="pocket",LIGHT="light"})[group[1]]) end
   end
-  for _,row in ipairs(P.trainer) do addRGB(row[1],row[2]) end
+  for _,row in ipairs(P.trainer) do addRGB(row[1],row[2],"trainer") end
   local ok,packs=pcall(resolve,"data.gb_palettes")
   if ok and type(packs)=="table" then
     for _,group in ipairs(packs) do
@@ -159,7 +193,12 @@ function P.presets(game, resolve)
   end
   local data=game and game.data or {}
   scan(data.gen2Palettes,"GAME GBC",0)
-  -- Keep the selected custom colour discoverable without duplicating a preset.
+  -- A custom saved swatch uses a canonical ID, never a duplicated option.
+  saved=P.canonical(saved)
+  if saved and saved~="original" and not byId[saved] then
+    addRGB("SAVED COLOUR",P.rgb(saved),"gbc")
+  end
+  P.sortPresets(out)
   return out,byId
 end
 return P
