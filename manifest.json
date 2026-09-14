@@ -1,7 +1,7 @@
 {
   "id": "bicycle_plus",
   "name": "Bicycle Plus",
-  "version": "1.4.2",
+  "version": "1.5.0",
   "api": 2,
   "entry": "main.lua",
   "profile": "content",
@@ -23,6 +23,6 @@
     "engine_internals"
   ],
   "affects_link": false,
-  "description": "Automatic cycling, independent normal/cycling audio mixes, and animated bicycle colours for the wheel, stripe, centre, edge and details with Trainer Skins compatibility. Requires Gen1ReComp++ v0.2.59 or newer and mod API 2.",
+  "description": "Automatic cycling, normal/cycling audio profiles, and five-part bicycle colours with a deduplicated preset picker and all 32,768 RGB555 colours. Original artwork and Trainer Skins handling retained.",
   "github": "moocd123/gen1recomp-bicycle-plus"
 }

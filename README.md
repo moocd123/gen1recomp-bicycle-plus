@@ -2,9 +2,9 @@
 
 A quality-of-life and customisation mod for **Gen1ReComp++**.
 
-**Current release: v1.4.2 — in-app updates and no upper engine-version limit.** Requires **Gen1ReComp++ v0.2.59 or newer** and an engine that supports **mod API 2**. New engine version numbers alone no longer exclude the mod; this does not guarantee that future engine changes will be compatible.
+**Current release: v1.5.0 — hardware-limited bicycle colour picker.** Requires **Gen1ReComp++ v0.2.59 or newer** and an engine that supports **mod API 2**. New engine version numbers alone no longer exclude the mod; this does not guarantee that future engine changes will be compatible.
 
-**[Download the installable mod ZIP](https://github.com/moocd123/gen1recomp-bicycle-plus/releases/download/v1.4.2/bicycle_plus-1.4.2.zip)** · **[Release notes](https://github.com/moocd123/gen1recomp-bicycle-plus/releases/tag/v1.4.2)**
+**[Download the installable mod ZIP](https://github.com/moocd123/gen1recomp-bicycle-plus/releases/download/v1.5.0/bicycle_plus-1.5.0.zip)** · **[Release notes](https://github.com/moocd123/gen1recomp-bicycle-plus/releases/tag/v1.5.0)**
 
 Bicycle Plus automatically mounts the Bicycle when entering an area where cycling is allowed, remembers deliberate dismounts for the current area, adds separate normal/cycling audio profiles, and lets you customise five visible parts of the bicycle while preserving the original pixel scale and animation.
 
@@ -21,7 +21,9 @@ Bicycle Plus automatically mounts the Bicycle when entering an area where cyclin
   - **CENTRE** — small centre block of each wheel.
   - **EDGE** — outer wheel outline.
   - **DETAILS** — exposed bicycle details such as handlebars/front-fork lines.
-- Animated three-direction colour preview.
+- **All 32,768 GBC RGB555 colours**, plus deduplicated game/LCD/trainer presets and **Original** for every part.
+- Animated three-direction preview; a compact side preview in the full colour grid.
+- Preview a choice before saving it: **A** applies, **B** cancels or returns to presets.
 - **English UK / English US** spelling option (`COLOUR/CENTRE` or `COLOR/CENTER`).
 - Compatibility work for **Trainer Skins 0.1.0 and 0.2.0**.
 - Supports **Pokémon Red, Blue, Yellow, Gold, Silver and Crystal** in Gen1ReComp++.
@@ -41,52 +43,44 @@ It does not contain platform-specific executables, libraries, file paths or keyb
 
 The engine declaration is `>=0.2.59`, with **no upper version limit**. An engine-number bump no longer requires a new Bicycle Plus release simply to remove the old maximum. The minimum engine version, required API, six-game targeting and permission checks are retained.
 
-**Allowing a version is not the same as testing it.** Future changes to rendering, audio, menus, movement or the mod API may still need a code update. Full gameplay on v0.2.60 and later has not been newly verified for this metadata-only release. See [VERIFICATION.md](VERIFICATION.md).
+**Allowing a version is not the same as testing it.** Future changes to rendering, audio, menus, movement or the mod API may still need a code update. The v1.5.0 checks are headless colour/menu/render/updater checks, not full gameplay certification on every engine or device. See [VERIFICATION.md](VERIFICATION.md).
 
 This repository contains **no ROMs, extracted ROM data or replacement Pokémon game assets**.
 
 ## First installation
 
-1. Download **`bicycle_plus-1.4.2.zip`** from the [release](https://github.com/moocd123/gen1recomp-bicycle-plus/releases/tag/v1.4.2) and **leave it zipped**.
+1. Download **`bicycle_plus-1.5.0.zip`** from the [release](https://github.com/moocd123/gen1recomp-bicycle-plus/releases/tag/v1.5.0) and **leave it zipped**.
 2. Open the launcher and go to **MODS → Import mod .zip**.
 3. Import the ZIP and enable **Bicycle Plus** for each edition you use.
 4. Launch the game and open **OPTION/OPTIONS → BICYCLE +**.
 
 Use the attached mod ZIP, **not GitHub's automatic Source code ZIP**. `SHA256SUMS.txt` is an optional download-integrity check, not another mod.
 
-## One-time update from v1.4.0 or v1.4.1
+## Updating
 
-Those packages did not declare the GitHub repository used for update discovery. They cannot discover this new release through that missing field. Install **v1.4.2 once manually** to add it:
+**Already on v1.4.2? Use the launcher's MODS → Check for updates / Update All.** The installed mod already knows this GitHub repository; you do not need to delete it or import a ZIP again to obtain v1.5.0. Keep the app online and let the update complete, then relaunch the game as directed by the launcher.
 
-1. Save your game and return to the launcher's **MODS** tab.
-2. Delete **only the old Bicycle Plus mod entry**, then import `bicycle_plus-1.4.2.zip`.
-3. Enable the editions you use and fully close/reopen the app.
+For **v1.4.0 or v1.4.1**, one manual update is still necessary because those packages lack the GitHub field. Return to the launcher, delete only the old Bicycle Plus mod entry, import the current installable ZIP, and re-enable the editions you use. Do not delete saves, preferences, or app data. Fully close/reopen after a manual replacement.
 
-Do not delete your saves, app data or the whole mods folder. The inspected launcher retains the mod-options table when removing an installed mod. The mod ID and every runtime Lua file/settings key are unchanged, so existing settings keep the same namespace.
-
-## Keeping the mod updated afterwards
-
-Use the launcher's **Update All** (or its individual mod-update control). The manifest now declares:
-
-```json
-"github": "moocd123/gen1recomp-bicycle-plus"
-```
-
-The app checks this repository's GitHub releases, compares the installed version with the release tag, and selects the attached installable ZIP. The preferred asset name is **`bicycle_plus-<version>.zip`**. Future releases must keep increasing the mod version, match it in the `v<version>` tag, and attach that ZIP.
-
-**Update All is user-triggered, not an always-running background updater.** Updates only become available after a newer release is published. No extra updater code or network permission is added to Bicycle Plus; the host launcher owns fetching and installation.
+The mod ID, repository, settings keys and original-colour aliases remain the same. Subsequent published releases with a higher version and an installable `bicycle_plus-<version>.zip` can be discovered by **Update All**. Network access and the host app's updater support are required. It is a user-triggered updater, not a background service.
 
 ## Controls
 
-Open **OPTION/OPTIONS → BICYCLE + → BIKE COLOUR**.
+### Bicycle colour editor
 
-- **Up / Down** — select WHEEL, STRIPE, CENTRE, EDGE or DETAILS.
-- **Left / Right** — change that part's colour.
-- **B / Start** — return.
+Open **BIKE COLOUR**. **Up / Down** selects WHEEL, STRIPE, CENTRE or CENTER, EDGE, or DETAILS. **A** opens that part's colour picker. **Left / Right** on the part list still cycles the original quick choices.
 
-Available choices are **Original, Red, Orange, Yellow, Green, Cyan, Blue, Purple, Pink, Brown, Silver, Black and White**.
+**Preset picker:** Move with the D-pad. The list contains unique swatches drawn from the original Bicycle Plus colours, DMG/Pocket/Light-style LCD ramps, GBC boot palettes for original Game Boy games, the available game colour packs, and Trainer Skins colour references. Repeated RGB555 colours are merged. Pages change as the cursor moves through the grid; holding a direction repeats. **Original** is always the first option.
 
-The game sprite remains on its original **16×16 pixel grid**. The mod recolours bicycle pixels rather than resizing the sprite. The preview is enlarged only so the individual pixels are easier to see.
+**Full GBC grid:** Press **Select** from the preset picker. **Left / Right** changes red and **Up / Down** changes green. Press **Select** again to focus the blue component, then use the D-pad to change it. Another **Select** returns focus to the grid. Every component has exactly **32 steps (0–31)**. The 32 × 32 grid and its 32 blue slices cover every RGB555 colour once. The display also shows its RGB hex value and RGB555 word.
+
+**A** applies the previewed colour and returns to the parts menu. **B** returns from the full grid to presets, or cancels from presets. **Start** cancels the picker directly. Browsing never rewrites saved colours; settings are written when you confirm.
+
+Existing named colours keep their exact appearance. The previous BLACK and WHITE quick presets are now labelled **CHARCOAL** and **OFFWHITE**, distinguishing them from pure GBC black and white. No colour has been removed. The original 16 × 16 sprite frames, bicycle-part masks and animation are retained.
+
+The DMG, Pocket and Light are monochrome devices with four shade levels, not three programmable RGB palettes. Their screen-tint presets are **approximations snapped to RGB555**, not a claim of exact LCD colour calibration. Non-RGB555 Trainer Skins reference values are also snapped to the nearest allowed colour. [Colour scope, conversion and sources](docs/HARDWARE_COLOURS.md).
+
+To display custom colours in the world, use **Advanced** for Gen 1 or **GBC** for Gen 2. The part menu offers an explicit **Select** shortcut when a change is needed. Merely opening the picker does not change the game's display mode.
 
 ## Automatic cycling
 
@@ -106,13 +100,13 @@ Area and bicycle music have independent volume and filter controls, and cycling 
 
 ## Compatibility and release history
 
-The runtime code is unchanged from **v1.4.0**, the first public release. Historical companion-mod checks were on **Gen1ReComp++ v0.2.59** and must not be read as a complete retest on every newer engine. Known compatibility work includes **Trainer Skins, Running Shoes, Auto Field Moves, HM Field Unlock and Wilds of Kanto**.
+Version 1.5.0 changes the colour picker and lookup. The audio, audio-menu, auto-mount and bicycle-part-mask modules are unchanged from the first public release. Historical companion-mod checks were on **Gen1ReComp++ v0.2.59** and must not be read as a complete retest on every newer engine. Known compatibility work includes **Trainer Skins, Running Shoes, Auto Field Moves, HM Field Unlock and Wilds of Kanto**.
 
 See [COMPATIBILITY.md](COMPATIBILITY.md), [VERIFICATION.md](VERIFICATION.md) and [CHANGELOG.md](CHANGELOG.md). Compatibility with every third-party mod cannot be guaranteed.
 
 ## Source and release packaging
 
-The production Lua files in the repository are the same files packaged into the release ZIP. The scoped publishing workflow verifies the manifest and runtime hashes, builds an explicit allowlist into the installable ZIP, and publishes it with a SHA-256 checksum. It does not overwrite existing releases and downloads the published asset to verify it. Packaging checks are not gameplay tests.
+The production Lua files in the repository are the same files packaged into the release ZIP. The scoped v1.5.0 publishing workflow runs the public headless suites against pinned v0.2.60 engine source, verifies the manifest and all eight runtime hashes, builds an explicit allowlist into the installable ZIP, and publishes it with a SHA-256 checksum. It does not overwrite existing releases and downloads the published asset to verify it. Packaging checks are not gameplay tests.
 
 ## License
 

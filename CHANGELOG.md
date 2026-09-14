@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.5.0 — Hardware-limited colour picker
+
+- Add all 32,768 RGB555 colours and a native-button colour-grid editor.
+- Merge duplicate preset colours from supported game/LCD/trainer references.
+- Keep Original independently available for all five bicycle parts.
+- Preserve exact old colour values and aliases; rename the off-black/off-white quick labels for clarity.
+- Preview edits without saving until confirmed; retain quick Left/Right colour choices.
+- Keep automatic mounting, audio and part-mask modules byte-for-byte unchanged.
+- Retain native Update All discovery from v1.4.2, the mod ID and all existing settings keys.
+- Add exhaustive colour, native-screen, software-pixel and updater-state tests with explicit device-testing limits.
+
 ## 1.4.2 — In-app updates and open-ended engine range
 
 - Add `github: moocd123/gen1recomp-bicycle-plus` so the native launcher can discover releases for Check for updates / Update All.

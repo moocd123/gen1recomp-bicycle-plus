@@ -3,7 +3,8 @@
 -- palettes cannot collapse the two wheel shades into one. Rider art stays
 -- outside the verified bicycle masks; other renderers keep their full chain.
 local Colours = {}
-function Colours.init(mod, getSetting, Parts)
+function Colours.init(mod, getSetting, Parts, Hardware)
+  assert(Hardware and Hardware.canonical and Hardware.rgb, "Hardware colour catalogue required")
   assert(Parts and Parts.classify and Parts.masks, "Bicycle part masks are required")
   local SpriteRenderer = require("src.render.SpriteRenderer")
   local PaletteFX = require("src.render.PaletteFX")
@@ -12,24 +13,7 @@ function Colours.init(mod, getSetting, Parts)
   local Runtime = require("src.mods.Runtime")
   local ownedHooks, ownedEvents = Runtime.hooks, Runtime.events
   local api = {}
-  api.options = {
-    { id = "original", label = "Original" },
-    -- These four hues match Red++ Advanced's NPC OBJ palettes exactly.
-    { id = "red", label = "Red", rgb = {255, 58, 8} },
-    { id = "orange", label = "Orange", rgb = {255, 132, 8} },
-    { id = "yellow", label = "Yellow", rgb = {255, 222, 41} },
-    { id = "green", label = "Green", rgb = {58, 189, 25} },
-    { id = "cyan", label = "Cyan", rgb = {49, 189, 222} },
-    { id = "blue", label = "Blue", rgb = {82, 74, 255} },
-    { id = "purple", label = "Purple", rgb = {156, 74, 222} },
-    { id = "pink", label = "Pink", rgb = {247, 82, 173} },
-    { id = "brown", label = "Brown", rgb = {123, 82, 25} },
-    { id = "silver", label = "Silver", rgb = {165, 173, 181} },
-    { id = "black", label = "Black", rgb = {49, 49, 58} },
-    { id = "white", label = "White", rgb = {239, 239, 247} },
-  }
-  local byId = {}
-  for _, option in ipairs(api.options) do byId[option.id] = option end
+  api.options = Hardware.legacyOptions
 
   local RED, GEN2 = Parts.legacyMasks.red, Parts.legacyMasks.gen2
   local supportedSkins = {
@@ -112,8 +96,11 @@ function Colours.init(mod, getSetting, Parts)
   local function settings(rimOverride)
     local choices, active = {}, false
     for _, part in ipairs(partOrder) do
-      local id = part == "rims" and rimOverride or getSetting(partKeys[part], "original")
-      choices[part] = byId[id] and id or "original"
+      local id = getSetting(partKeys[part], "original")
+      if type(rimOverride) == "table" and rimOverride[partKeys[part]] ~= nil then
+        id = rimOverride[partKeys[part]]
+      elseif type(rimOverride) == "string" and part == "rims" then id = rimOverride end
+      choices[part] = Hardware.canonical(id) or "original"
       if choices[part] ~= "original" then active = true end
     end
     return choices, active
@@ -302,6 +289,8 @@ function Colours.init(mod, getSetting, Parts)
     local key = tostring(renderer.def.image) .. ":" .. tostring(masks)
     for _, part in ipairs(partOrder) do key = key .. ":" .. choices[part] end
     if variants.items[key] ~= nil then return variants.items[key] or nil end
+    local selectedRGB = {}
+    for _,part in ipairs(partOrder) do selectedRGB[part] = Hardware.rgb(choices[part]) end
     local combined, raw, overlay
     local ok, result = pcall(function()
       local function sourcePixels()
@@ -331,11 +320,10 @@ function Colours.init(mod, getSetting, Parts)
             local r, g, b, a = raw:getPixel(x, row)
             local part = Parts.classify(kind, f % 6 + 1, x, y, r, g, b, a,
               choices.stripes ~= "original")
-            local option = part and byId[choices[part]]
-            if option and option.rgb then
+            local c = part and selectedRGB[part]
+            if c then
               local _, _, _, alpha = combined:getPixel(x, row)
               if alpha > 0.01 then
-                local c = option.rgb
                 local rr, gg, bb = c[1]/255, c[2]/255, c[3]/255
                 combined:setPixel(x, row, rr, gg, bb, alpha)
                 overlay:setPixel(x, row, rr, gg, bb, alpha)
@@ -354,7 +342,7 @@ function Colours.init(mod, getSetting, Parts)
       if data.release then pcall(data.release,data) end
     end
     if not ok then lastError = tostring(result); result = false end
-    -- Five independent selectors have 371,293 combinations. Keep a bounded
+    -- RGB555 gives each part 32,768 colours plus ORIGINAL. Keep a bounded
     -- working set while browsing, without releasing an image that a later
     -- renderer may still hold; LOVE garbage collection retires evicted ones.
     if #variants.order >= MAX_VARIANTS then
@@ -520,6 +508,22 @@ function Colours.init(mod, getSetting, Parts)
     return true, api.status(game)
   end
 
+  function api.drawSidePreview(game, x, y, scale, timer, overrides)
+    local renderer = bikeForPreview(game or liveGame)
+    if not renderer then return false, api.status(game) end
+    local original = previewImage(renderer)
+    local changed = colourImages(renderer, original, (settings(overrides)), true)
+    local image = changed and changed.full or original
+    local pose = renderer:getPoseGeometry("left", math.floor((timer or 0)/0.22)%2, false)
+    scale = scale or 2
+    local G=love.graphics
+    G.push("all"); G.setShader(); G.setColor(1,1,1,1)
+    if pose.mirror then G.draw(image,pose.quad,x+16*scale,y,0,-scale,scale)
+    else G.draw(image,pose.quad,x,y,0,scale,scale) end
+    G.pop()
+    return true, api.status(game)
+  end
+
   -- Gen 2's CLASSIC post-pass does not consult a screen's sgbPalettes method.
   -- Exempt only this preview from that post-pass; the rest of the menu and
   -- the live world keep the user's chosen display mode.
@@ -527,12 +531,14 @@ function Colours.init(mod, getSetting, Parts)
     zones = next(game, zones)
     local top = game and game.stack and game.stack:top()
     if enabled and not Runtime.safeMode and generation2(game)
-        and top and top.screenId == "BicyclePlusColours"
+        and top and (top.screenId == "BicyclePlusColours" or top.screenId == "BicyclePlusPicker")
         and type(zones) == "table" and zones[1] then
       local out = {}
       for i, zone in ipairs(zones) do out[i] = zone end
       local rect = top.bicyclePlusPreviewRect or {x=16,y=56,scale=2}
-      local zone = api.previewZones(game,rect.x,rect.y,rect.scale)[1]
+      local zone = top.screenId == "BicyclePlusPicker"
+        and {colors=false,x=0,y=0,w=160,h=144}
+        or api.previewZones(game,rect.x,rect.y,rect.scale)[1]
       -- Gen 2 post-pass zones span the complete Playfield, whereas this
       -- opaque menu is drawn at the native integer letterbox fit. Convert
       -- through the actual viewport/origin/scale; a fixed extra row fails on

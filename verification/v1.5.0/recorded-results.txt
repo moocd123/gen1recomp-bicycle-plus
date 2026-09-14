@@ -1,0 +1,11 @@
+Local checks: supplied v0.2.59 engine modules under texlua; software graphics/test doubles, not physical gameplay.
+PASS: 167338 colour checks; 32768 unique RGB555 values; 616 unique preset swatches (68 GBC boot colours); Original retained.
+LCD/trainer swatches are projected to RGB555; this is not a physical LCD colour calibration.
+PASS: 294 main/menu/persistence checks across six edition contexts; native Screens/StateStack, simulated input/graphics and unchanged services.
+PASS: 15385 pixel/renderer checks over 2 source-sheet cases with the native SpriteRenderer and software graphics boundaries.
+PASS: open engine range, six-game launcher eligibility, minimum engine and API checks
+PASS: native GitHub release parsing, exact asset preference and version comparison
+PASS: native Update All 1.4.2 -> 1.5.0 discovery/queue/completion; bootstrap, current/offline cases
+PASS 125 assertions. UI, network, filesystem install boundaries simulated; no full-device gameplay claim.
+Additional local-only supplied Trainer Skins image fixtures:
+PASS: 215247 pixel/renderer checks over 28 source-sheet cases with the native SpriteRenderer and software graphics boundaries.

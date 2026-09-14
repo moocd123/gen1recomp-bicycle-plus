@@ -5,13 +5,8 @@ return function(mod)
       "@bicycle_plus/" .. name .. ".lua"))()
   end
 
-  local colourChoices = {
-    {"ORIGINAL", "original"}, {"RED", "red"}, {"ORANGE", "orange"},
-    {"YELLOW", "yellow"}, {"GREEN", "green"}, {"CYAN", "cyan"},
-    {"BLUE", "blue"}, {"PURPLE", "purple"}, {"PINK", "pink"},
-    {"BROWN", "brown"}, {"SILVER", "silver"}, {"BLACK", "black"},
-    {"WHITE", "white"},
-  }
+  local Hardware = module("hardware_colours")
+  local colourChoices = Hardware.quickChoices
   local colourKeys = {bike_colour=true, bike_stripes_colour=true,
     bike_centres_colour=true, bike_tyres_colour=true, bike_frame_colour=true}
   local spellingChoices = {{"ENGLISH UK", "uk"}, {"ENGLISH US", "us"}}
@@ -42,7 +37,7 @@ return function(mod)
       return math.max(0, math.min(3, math.floor(tonumber(v) or 0)))
     end
     if key == "spelling" and not allowed(spellingChoices,v) then return "uk" end
-    if colourKeys[key] and not allowed(colourChoices,v) then return "original" end
+    if colourKeys[key] then return Hardware.canonical(v) or "original" end
     if key == "riding_music" and not allowed(ridingMusicChoices,v) then return "both" end
     if ridingOverrides[key] then
       return math.max(-1, math.min(ridingOverrides[key], math.floor(tonumber(v) or -1)))
@@ -53,19 +48,32 @@ return function(mod)
 
   local function colourWord() return getSetting("spelling") == "us" and "COLOR" or "COLOUR" end
   local function centreWord() return getSetting("spelling") == "us" and "CENTER" or "CENTRE" end
+  local function choicesFor(key)
+    local choices={}
+    local raw=mod.options:get(key)
+    for i,row in ipairs(colourChoices) do
+      -- The native manager reads raw storage; preserve a legacy alias only
+      -- for its matching row, never display a duplicate of the same colour.
+      choices[i]={row[1],Hardware.canonical(raw)==row[2] and raw or row[2]}
+    end
+    local current=getSetting(key)
+    if not allowed(colourChoices,current) then choices[#choices+1]={Hardware.label(current),current} end
+    -- The generic mod-manager stays small; the full picker lives in-game.
+    return choices
+  end
   local function defineOptions()
     mod.options:define({
       {key="auto_mount", type="toggle", label="AUTO BICYCLE", default=true},
       {key="bike_colour", type="choice", label="WHEEL " .. colourWord(),
-        default="original", choices=colourChoices},
+        default="original", choices=choicesFor("bike_colour")},
       {key="bike_stripes_colour", type="choice", label="STRIPE " .. colourWord(),
-        default="original", choices=colourChoices},
+        default="original", choices=choicesFor("bike_stripes_colour")},
       {key="bike_centres_colour", type="choice", label=centreWord() .. " " .. colourWord(),
-        default="original", choices=colourChoices},
+        default="original", choices=choicesFor("bike_centres_colour")},
       {key="bike_tyres_colour", type="choice", label="EDGE " .. colourWord(),
-        default="original", choices=colourChoices},
+        default="original", choices=choicesFor("bike_tyres_colour")},
       {key="bike_frame_colour", type="choice", label="DETAILS " .. colourWord(),
-        default="original", choices=colourChoices},
+        default="original", choices=choicesFor("bike_frame_colour")},
       {key="bike_volume", type="number", label="BIKE VOLUME", default=7,
         min=0, max=7, step=1},
       {key="riding_music", type="choice", label="MUSIC ON BIKE", default="both",
@@ -90,7 +98,7 @@ return function(mod)
 
   local automount = module("automount").init(mod, getSetting)
   local audio = module("audio").init(mod, getSetting)
-  local colours = module("colours").init(mod, getSetting, module("bike_parts"))
+  local colours = module("colours").init(mod, getSetting, module("bike_parts"), Hardware)
   local Runtime = require("src.mods.Runtime")
   local Font = require("src.render.Font")
   local Theme = require("src.ui.Theme")
@@ -109,7 +117,10 @@ return function(mod)
       value = math.max(0,math.min(3,math.floor(tonumber(value) or 0)))
     end
     if key == "spelling" and not allowed(spellingChoices,value) then return false end
-    if colourKeys[key] and not allowed(colourChoices,value) then return false end
+    if colourKeys[key] then
+      value=Hardware.canonical(value)
+      if not value then return false end
+    end
     if key == "riding_music" and not allowed(ridingMusicChoices,value) then return false end
     if ridingOverrides[key] then
       value = math.max(-1, math.min(ridingOverrides[key], math.floor(tonumber(value) or -1)))
@@ -127,7 +138,7 @@ return function(mod)
     if game.mods.events then
       game.mods.events:emit("mod.options_changed", {mod=mod.id,key=key,value=value})
     end
-    if key == "spelling" then defineOptions() end
+    if key == "spelling" or colourKeys[key] then defineOptions() end
     return true
   end
 
@@ -173,7 +184,7 @@ return function(mod)
     if old == nil then old=saved.bike_tyres_colour end
     -- Persist ORIGINAL even on a fresh install. Otherwise the first new EDGE
     -- edit could be mistaken for a legacy combined setting on the next update.
-    local value=allowed(colourChoices,old) and old or "original"
+    local value=Hardware.canonical(old) or "original"
     saved.bike_centres_colour=value
     live.bike_centres_colour=value
     options.modOptions=options.modOptions or {}
@@ -187,6 +198,11 @@ return function(mod)
   end
   local audioMenu = module("audio_menu").init(mod, {
     getSetting=getSetting, setSetting=setSetting,
+  })
+
+  local picker = module("colour_picker").init(mod, {
+    hardware=Hardware, colours=colours, getSetting=getSetting, setSetting=setSetting,
+    colourWord=colourWord,
   })
 
   local function cycle(choices, value, direction)
@@ -218,7 +234,7 @@ return function(mod)
         value=function() return "VOLUMES/FILTERS" end,
         activate=function(g) audioMenu.open(g) end},
       {id="bicycle_plus.colour",label=function() return "BIKE " .. colourWord() end,
-        value=function() return "WHEEL:" .. label(colourChoices,getSetting("bike_colour")) end,
+        value=function() return "WHEEL:" .. Hardware.label(getSetting("bike_colour")) end,
         activate=function(g) Screens.push(g,"BicyclePlusColours") end},
       {id="bicycle_plus.spelling",label="LANGUAGE",
         value=function() return label(spellingChoices,getSetting("spelling")) end,
@@ -279,9 +295,12 @@ return function(mod)
         self.game.stack:pop() return
       end
       if input:wasPressed("a") then
-        if colours.needsColourMode(self.game) then colours.enableColourMode(self.game)
-        else self.game.stack:pop() end
+        local row=self.rows[self.index]
+        picker.open(self.game,row.key,row.label())
         return
+      end
+      if input:wasPressed("select") and colours.needsColourMode(self.game) then
+        colours.enableColourMode(self.game); return
       end
       if input:wasPressed("up") then self.index=(self.index-2)%#self.rows+1
       elseif input:wasPressed("down") then self.index=self.index%#self.rows+1
@@ -307,15 +326,15 @@ return function(mod)
       elseif status == "Colour readback unavailable" then Font.draw(colourWord() .. " NOT READY",16,56) end
       for i,row in ipairs(self.rows) do
         local y=64+(i-1)*11
-        local value=label(colourChoices,getSetting(row.key))
+        local value=Hardware.label(getSetting(row.key))
         Font.draw(row.label(),16,y)
         Font.draw(value,144-#value*8,y)
         if i==self.index then Font.drawCode(Theme.cursor,8,y) end
       end
-      Font.draw("UD:PART LR:" .. colourWord(),8,120)
+      Font.draw("A:PICK LR:QUICK",16,120)
       if colours.needsColourMode(self.game) then
-        Font.draw("A:" .. colours.colourModeName(self.game) .. " B:BACK",16,128)
-      else Font.draw("A/B:BACK (SAVED)",16,128) end
+        Font.draw("SEL:" .. colours.colourModeName(self.game) .. " B:BACK",4,128)
+      else Font.draw("B:BACK  SAVED",24,128) end
       G.setColor(1,1,1,1)
     end
     return self
@@ -365,6 +384,8 @@ return function(mod)
   -- Diagnostics and automated verification; no global variables or hotkeys.
   mod.exports.update=update
   mod.exports.getSetting=getSetting
+  mod.exports.hardwareColours=Hardware
+  mod.exports.openColourPicker=picker.open
   mod.exports.setSetting=setSetting
   mod.exports.status=function()
     return {automount=automount.status and automount.status(),

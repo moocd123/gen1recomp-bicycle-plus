@@ -1,56 +1,34 @@
-# Bicycle Plus v1.4.2 verification
+# Bicycle Plus v1.5.0 verification
 
 ## Scope
 
-This is a metadata and release-packaging update. The manifest now declares `github: moocd123/gen1recomp-bicycle-plus` and the engine range `>=0.2.59`. API 2, all six game targets, permissions, the mod ID and every runtime Lua file are unchanged.
+The colour editor and colour lookup now use a unique RGB555 catalogue. `hardware_colours.lua` and `colour_picker.lua` are new; `main.lua` and `colours.lua` integrate them. The **audio.lua, audio_menu.lua, automount.lua and bike_parts.lua files are byte-for-byte unchanged** from public v1.4.2. The mod ID, API requirement, open engine range, GitHub source and saved option names stay the same.
 
-**An open engine range is not proof of compatibility with future engines.** Full gameplay in a v0.2.60-or-later executable and every physical device were not newly tested for this update.
+This is not a fresh full-gameplay or physical-device test. The app's graphics driver, touch layout, installed companion-mod stack and network/installer behaviour still need normal user testing. The new feature is not a promise of compatibility with untested future engines.
 
-## Native launcher/updater checks
+## Reproducible checks
 
-The supplied v0.2.59 Windows package's native Lua modules were loaded under `texlua` (Lua 5.3). The new script exercises `Manifest`, `Semver`, `LauncherMods.deriveList`, `ModUpdate` and the actual `RomImporter` Update All state machine. Only network transport, UI callbacks, preferences persistence and the final filesystem-install boundary are simulated. No live third-party release or game installation is altered by the test.
-
-**125 assertions passed**, covering:
-
-- The `>=0.2.59` range accepts the minimum and later synthetic version inputs across all six launcher game selections.
-- Older versions still fail the minimum, and an engine providing only API 1 still rejects this API 2 mod.
-- The GitHub field survives manifest validation and reaches the launcher row.
-- GitHub release parsing prefers `bicycle_plus-<version>.zip` over an unrelated ZIP and recognises a newer version without downgrading or reinstalling the current version.
-- The native Update All path requests the right repository, bypasses stale cache, queues this mod and reaches the simulated install boundary with the correct asset.
-- An older package with no GitHub field makes no update request: one manual installation is necessary to add that field.
-- Current-version and offline cases do not schedule an inappropriate installation.
-
-The hypothetical **v1.4.3** release in the test is only a fixture demonstrating an update from v1.4.2. It was **not published**. Synthetic future engine numbers test range matching only; they are not executions of future software.
-
-## Source identity
-
-These supplied v0.2.59 files have the same Git blob IDs as the official **v0.2.60 tag** inspected through GitHub:
-
-| Native engine file | Git blob SHA-1 |
-| --- | --- |
-| `src/mods/Manifest.lua` | `865b9f03e0dbc5ce4c102321873df0b22bfccf6b` |
-| `src/mods/ModUpdate.lua` | `d839a0f71c731f53e7e14077e2b2d691918c02a5` |
-| `src/import/RomImporter.lua` | `5cd193119ffcf5ff1addfd69a32b6fffbaff01cc` |
-
-This establishes identity of those source modules, not an end-to-end physical-device test.
-
-## Reproduce
-
-From the repository root, with the original engine Lua source available locally:
+From the repository root, using Lua 5.3 or `texlua` and an engine source directory containing `src/` and `data/`:
 
 ```sh
-texlua verification/v1.4.2/check_updater.lua /path/to/engine
+lua5.3 verification/v1.5.0/check_colours.lua /path/to/engine
+lua5.3 verification/v1.5.0/check_menu.lua /path/to/engine
+lua5.3 verification/v1.5.0/check_renderer.lua /path/to/engine
+lua5.3 verification/v1.5.0/check_updater.lua /path/to/engine
 python3 .github/scripts/build_release.py
 ```
 
-The engine directory must contain `src/` and its normal data/dependencies from the application package. The test does not require a Pokémon ROM. [Recorded output](verification/v1.4.2/recorded-results.txt) and [test source](verification/v1.4.2/check_updater.lua) are included in the repository.
+- **Colour math:** enumerate all 32,768 words; verify packing, stored IDs, unique RGB expansion and exact round-trips. Check legacy appearance, strict input rejection, Original, all shipped GBC boot-palette references, preset deduplication and bounded/cyclic optional data.
+- **Menus/persistence:** execute the actual main/picker code with native `Screens` and `StateStack` across six edition contexts. Graphics, button input and unchanged services are test doubles. Exercise pending previews, cancellation, confirmation into both native options stores, held directions, all blue slices, Original for every part, safe mode, UK/US labels and text bounds.
+- **Rendering:** use the native `SpriteRenderer` with software ImageData/graphics. Verify target colour pixels, unchanged rider/other-component pixels and alpha, Original restoration, staged previews and resolver shutdown. Public fixtures are procedural, not extracted game assets.
+- **Updater:** exercise the native manifest/range/discovery/Update All state machine for an installed v1.4.2 updating to a v1.5.0 release fixture. Transport, preferences persistence, UI and final filesystem installation are simulated. Current-version and offline cases must not reinstall/downgrade.
 
-The previous [v1.4.1 verification](https://github.com/moocd123/gen1recomp-bicycle-plus/blob/v1.4.1/VERIFICATION.md) remains historical evidence. It is not relabelled as a new gameplay run.
+Local checks used the supplied v0.2.59 engine modules. The native SpriteRenderer Git blob was also checked against the official v0.2.60 tag and matched `2b74ea6936911b16e7e871573112e02105767264`. The publication workflow repeats the public suites using engine source from tag v0.2.60. Consult the actual [Actions run](https://github.com/moocd123/gen1recomp-bicycle-plus/actions) for its outcome.
+
+An additional local software-pixel run covered the 13 bicycle sheets in the supplied Trainer Skins 0.2.0 package, both with their true-colour pixels and with its luminance-quantised form. These supplied-art fixtures are **not committed or packaged**. This is not a claim that every feature of Trainer Skins or all other mods was rerun on a phone.
 
 ## Release integrity
 
-The builder checks the exact manifest, required GitHub repository, API, game targets and permissions, then verifies all six runtime SHA-256 hashes against the public v1.4.0 baseline. It packs only an explicit source/documentation/test allowlist, generates per-file integrity records and validates the ZIP. `SHA256SUMS.txt` covers the final asset.
+The builder checks all eight runtime SHA-256 hashes, the exact v1.5.0 manifest, unchanged update source, game targets, permission list and stable mod ID. It packs an explicit source/documentation allowlist, makes per-file integrity records and checks the ZIP. The publishing workflow downloads published assets again and compares their bytes and SHA-256 checksum. Existing releases are not overwritten.
 
-The publishing workflow downloads the published ZIP and checksum, compares both with its build and verifies the checksum. See [Actions](https://github.com/moocd123/gen1recomp-bicycle-plus/actions) for the actual publication result.
-
-The package contains no ROMs, engine executables, imported ROM caches, extracted game assets or soundtrack. GitHub/network availability and future breaking engine changes remain external constraints.
+Historical v1.4.x test records remain historical. No ROMs, engine executables, supplied trainer images, extracted sprites, songs or private data are included in the release.
