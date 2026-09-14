@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.4.2 — In-app updates and open-ended engine range
+
+- Add `github: moocd123/gen1recomp-bicycle-plus` so the native launcher can discover releases for Check for updates / Update All.
+- Publish the installable asset as `bicycle_plus-1.4.2.zip`, matching the updater's preferred `<id>-<version>.zip` naming.
+- Replace the two-version engine declaration with `>=0.2.59`, with no upper version limit.
+- Retain the minimum engine requirement, API 2 requirement, six-game targets, permissions, mod ID and settings namespace.
+- Leave all six runtime Lua files unchanged from v1.4.0.
+- Document the one-time manual installation needed for older packages that lack the GitHub field.
+- Add native launcher/updater headless checks and scoped release packaging verification.
+- An accepted future engine version is not a guarantee of gameplay compatibility. Future breaking changes can still need fixes.
+
 ## 1.4.1 — Engine-version compatibility hotfix
 
 - Replace the exact `=0.2.59` engine requirement with `=0.2.59 || =0.2.60`.

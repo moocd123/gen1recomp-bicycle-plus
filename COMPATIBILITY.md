@@ -1,14 +1,22 @@
-# Bicycle Plus 1.4.1 compatibility
+# Bicycle Plus v1.4.2 compatibility
 
-The v1.4.1 manifest accepts **Gen1ReComp++ v0.2.59 or v0.2.60** and retains the six game targets: **Red, Blue, Yellow, Gold, Silver and Crystal**.
+## Engine range and update discovery
 
-**Verification scope:** v1.4.1 is a version-gate hotfix, not an engine-port rewrite. Its six runtime Lua files are identical to v1.4.0. The prepared hotfix checks used the supplied v0.2.59 engine modules and test doubles. For the launcher check, `Version.engine` was varied as an input; this is not execution of a downloaded v0.2.60 runtime. Full v0.2.60 gameplay, rendering and audio-device verification remain pending.
+The manifest declares **Gen1ReComp++ `>=0.2.59`**, **mod API 2**, and all six editions: **Red, Blue, Yellow, Gold, Silver and Crystal**. There is no upper engine-version limit. This avoids rejection solely because a newer engine version number was not listed; it does not certify future gameplay compatibility or bypass the required API/permission checks.
 
-The mod is written in portable Lua and is intended to work on any platform supported by the declared Gen1ReComp++ versions that exposes the normal mod-loading system. It does not depend on a platform-specific executable, native library, fixed path or keyboard-only control scheme. Not every physical platform or device has been individually tested.
+The `github` field is **`moocd123/gen1recomp-bicycle-plus`**. The native launcher uses that field for update discovery and prefers the asset `bicycle_plus-<version>.zip`. Older Bicycle Plus packages lack the field and need one manual installation of v1.4.2 before future updates can be discovered this way.
+
+The mod is portable Lua and is intended for any supported host platform with the necessary mod API. In-app download availability additionally depends on the host platform's network transport. Manual ZIP installation remains available.
+
+## Verification scope
+
+All six runtime Lua files remain identical to the first public v1.4.0 source. The new checks exercise the actual supplied launcher and updater Lua modules in a headless harness, with network/download/UI boundaries simulated. The v0.2.60 source blobs for Manifest, ModUpdate and RomImporter match those in the supplied v0.2.59 package. This does not constitute running the complete v0.2.60 application or every device.
+
+Future changes to internal audio, rendering, menus, movement or mod interfaces can still require a code update. The open version range cannot prevent those changes. See [VERIFICATION.md](VERIFICATION.md).
 
 ## Historical companion checks on Gen1ReComp++ v0.2.59
 
-The following table is retained from the first public release. These companion versions were not freshly exercised against a v0.2.60 runtime for this update.
+The following versions were checked during development, not freshly verified across every later engine.
 
 | Companion mod | Version checked | Package scope |
 | --- | --- | --- |
@@ -30,16 +38,13 @@ The following table is retained from the first public release. These companion v
 
 Additional rendering checks were performed with Dramaless Shape 2.0.4. Kanto First Person 1.8.3 had a separate dependency/activation issue with that Dramaless pairing even without Bicycle Plus; Bicycle Plus does not modify either mod.
 
+
 ## Compatibility behaviour
 
-- **Trainer Skins:** Bicycle recolouring is designed to preserve trainer clothing, hair, skin, hands and shoes while recolouring supported bicycle pixels.
+- **Trainer Skins:** bicycle recolouring preserves supported trainer clothing, hair, skin, hands and shoes.
 - **Running Shoes:** Bicycle Plus does not replace movement-speed handling.
-- **Auto Field Moves / HM Field Unlock:** Cycling can transition into game-supported field actions such as Surf.
-- **Wilds of Kanto:** Automatic mounting waits while Wilds is controlling a Pokémon rather than the trainer.
-- **Unknown replacement bicycle artwork:** Bicycle Plus avoids blindly recolouring artwork it cannot safely classify.
+- **Auto Field Moves / HM Field Unlock:** cycling can transition into supported field actions such as Surf.
+- **Wilds of Kanto:** automatic mounting waits while controlling a Pokémon instead of the trainer.
+- **Unknown replacement bicycle artwork:** the mod avoids blindly recolouring artwork it cannot safely classify.
 
-## Scope
-
-These checks cover the versions and interactions listed above. They do not guarantee compatibility with every future version or every third-party mod, especially mods that replace the same rendering, world-control, menu or audio hooks without chaining their predecessors.
-
-Supporting all six games does not force another mod to work in a game that its own manifest excludes. See [VERIFICATION.md](VERIFICATION.md) for this update's testing limits.
+Supporting all six games does not extend a companion mod beyond the editions its own manifest permits. Compatibility with every third-party mod cannot be guaranteed.

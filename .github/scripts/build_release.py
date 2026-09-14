@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build only Bicycle Plus v1.4.1 from reviewed source and an explicit allowlist."""
+"""Build the reviewed v1.4.2 update from a strict allowlist; never package game data."""
 from pathlib import Path
 from zipfile import ZipFile, ZipInfo, ZIP_DEFLATED
 import hashlib
@@ -7,6 +7,8 @@ import json
 
 ROOT = Path(__file__).resolve().parents[2]
 DIST = ROOT / 'dist'
+VERSION = '1.4.2'
+REPOSITORY = 'moocd123/gen1recomp-bicycle-plus'
 LUA_HASHES = {
     'audio.lua': '7923276326260941c5af81cdbb704ed282fa99ca4156d63a18e369944835e880',
     'audio_menu.lua': 'fbd12b1c7ba818ab140d25ce76f01f52847f92dc20505cd766e5fced53fe5d71',
@@ -23,31 +25,36 @@ def digest(data: bytes) -> str:
 
 def main() -> None:
     manifest = json.loads((ROOT / 'manifest.json').read_text(encoding='utf-8'))
-    expected = ('bicycle_plus', '1.4.1', '=0.2.59 || =0.2.60')
-    actual = (manifest.get('id'), manifest.get('version'), manifest.get('game_version'))
+    expected = ('bicycle_plus', VERSION, '>=0.2.59', REPOSITORY)
+    actual = tuple(manifest.get(k) for k in ('id', 'version', 'game_version', 'github'))
     if actual != expected:
-        raise SystemExit('This builder is restricted to the reviewed v1.4.1 manifest.')
+        raise SystemExit('This builder requires the reviewed v1.4.2 range and GitHub update source.')
     if manifest.get('entry') != 'main.lua' or manifest.get('api') != 2:
-        raise SystemExit('Unexpected mod entry point or API.')
+        raise SystemExit('Unexpected entry point or required API.')
     if set(manifest.get('games', [])) != {'red', 'blue', 'yellow', 'gold', 'silver', 'crystal'}:
         raise SystemExit('Unexpected game targeting.')
+    if manifest.get('permissions') != ['engine_internals']:
+        raise SystemExit('Unexpected permissions; launcher-owned updates need no new mod permission.')
+    if manifest.get('optional_dependencies') != ['trainer_skins'] or manifest.get('affects_link') is not False:
+        raise SystemExit('Unexpected companion dependency or link declaration.')
     names = sorted([*LUA_HASHES, 'manifest.json', 'README.md', 'LICENSE',
                     'CHANGELOG.md', 'COMPATIBILITY.md', 'VERIFICATION.md',
-                    'RELEASE_NOTES_v1.4.1.md'])
+                    'RELEASE_NOTES_v1.4.2.md', 'verification/v1.4.2/check_updater.lua',
+                    'verification/v1.4.2/recorded-results.txt'])
     files = {name: (ROOT / name).read_bytes() for name in names}
     for name, expected_hash in LUA_HASHES.items():
         if digest(files[name]) != expected_hash:
             raise SystemExit(f'{name} differs from the reviewed public v1.4.0 code.')
     metadata = {
         'modkit': '1.0.0', 'packed_at': '2026-09-14T00:00:00Z',
-        'id': manifest['id'], 'version': manifest['version'], 'api': manifest['api'],
+        'id': manifest['id'], 'version': VERSION, 'api': manifest['api'],
         'engine_range': manifest['game_version'],
         'files': [{'path': name, 'bytes': len(data), 'sha256': digest(data)}
                   for name, data in sorted(files.items())],
     }
     files['.modkit/pack.json'] = (json.dumps(metadata, indent=2) + '\n').encode('utf-8')
     DIST.mkdir(exist_ok=True)
-    archive = DIST / 'Bicycle_Plus-1.4.1-Gen1ReComp-0.2.60.zip'
+    archive = DIST / f'bicycle_plus-{VERSION}.zip'
     with ZipFile(archive, 'w') as z:
         for name, data in sorted(files.items()):
             info = ZipInfo(name, date_time=(2026, 9, 14, 0, 0, 0))
@@ -63,8 +70,8 @@ def main() -> None:
                 raise SystemExit(f'ZIP round-trip failed: {name}')
     checksum = f'{digest(archive.read_bytes())}  {archive.name}\n'
     (DIST / 'SHA256SUMS.txt').write_text(checksum, encoding='ascii')
-    print('PASS: exact manifest, six unchanged Lua files, allowlisted packaging and ZIP integrity.')
-    print('This packaging check is not a v0.2.60 gameplay test.')
+    print('PASS: manifest/update source, six unchanged runtime files, allowlisted packaging and ZIP integrity.')
+    print('Packaging checks do not certify future engine gameplay compatibility.')
     print(checksum, end='')
 
 

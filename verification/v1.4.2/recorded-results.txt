@@ -1,0 +1,4 @@
+PASS: open engine range, six-game launcher eligibility, minimum engine and API checks
+PASS: native GitHub release parsing, exact asset preference and version comparison
+PASS: native Update All discovery/queue/completion; old-package bootstrap; current/offline cases
+PASS 125 assertions. UI, network, filesystem install boundaries simulated; no full-device gameplay claim.

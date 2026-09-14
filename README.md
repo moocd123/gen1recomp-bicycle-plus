@@ -2,9 +2,9 @@
 
 A quality-of-life and customisation mod for **Gen1ReComp++**.
 
-**Current release: v1.4.1 — engine-version compatibility hotfix.** The manifest now accepts **v0.2.59 and v0.2.60**. This corrects the version restriction; full gameplay on v0.2.60 has not been verified. See [VERIFICATION.md](VERIFICATION.md).
+**Current release: v1.4.2 — in-app updates and no upper engine-version limit.** Requires **Gen1ReComp++ v0.2.59 or newer** and an engine that supports **mod API 2**. New engine version numbers alone no longer exclude the mod; this does not guarantee that future engine changes will be compatible.
 
-**[Download the installable mod ZIP](https://github.com/moocd123/gen1recomp-bicycle-plus/releases/download/v1.4.1/Bicycle_Plus-1.4.1-Gen1ReComp-0.2.60.zip)** · **[Release notes](https://github.com/moocd123/gen1recomp-bicycle-plus/releases/tag/v1.4.1)**
+**[Download the installable mod ZIP](https://github.com/moocd123/gen1recomp-bicycle-plus/releases/download/v1.4.2/bicycle_plus-1.4.2.zip)** · **[Release notes](https://github.com/moocd123/gen1recomp-bicycle-plus/releases/tag/v1.4.2)**
 
 Bicycle Plus automatically mounts the Bicycle when entering an area where cycling is allowed, remembers deliberate dismounts for the current area, adds separate normal/cycling audio profiles, and lets you customise five visible parts of the bicycle while preserving the original pixel scale and animation.
 
@@ -25,46 +25,60 @@ Bicycle Plus automatically mounts the Bicycle when entering an area where cyclin
 - **English UK / English US** spelling option (`COLOUR/CENTRE` or `COLOR/CENTER`).
 - Compatibility work for **Trainer Skins 0.1.0 and 0.2.0**.
 - Supports **Pokémon Red, Blue, Yellow, Gold, Silver and Crystal** in Gen1ReComp++.
+- GitHub release discovery through the launcher's **Check for updates / Update All** controls after installing v1.4.2 or newer.
 
 ## Platform support
 
-Bicycle Plus is written in portable Lua and is intended to work on **any platform supported by the declared Gen1ReComp++ versions** that provides the normal mod-loading system.
+Bicycle Plus is written in portable Lua and is intended to work on **any platform supported by Gen1ReComp++** that provides the required mod API and normal mod-loading system.
 
-It does not contain platform-specific executables, libraries, file paths or keyboard-only controls. Not every physical device and operating system has been individually tested; platform-specific issues can be reported through [GitHub Issues](https://github.com/moocd123/gen1recomp-bicycle-plus/issues).
+It does not contain platform-specific executables, libraries, file paths or keyboard-only controls. Not every device and operating system has been tested. In-app downloading also requires the host app's network/download support and access to GitHub; the ZIP remains available for manual installation.
 
-## Requirements
+## Requirements and future engine versions
 
-- **Gen1ReComp++ v0.2.59 or v0.2.60**, with the verification limits above.
+- **Gen1ReComp++ v0.2.59 or newer**, with **mod API 2** support.
 - A legally obtained supported Pokémon ROM imported through Gen1ReComp++.
 - Trainer Skins is optional.
 
+The engine declaration is `>=0.2.59`, with **no upper version limit**. An engine-number bump no longer requires a new Bicycle Plus release simply to remove the old maximum. The minimum engine version, required API, six-game targeting and permission checks are retained.
+
+**Allowing a version is not the same as testing it.** Future changes to rendering, audio, menus, movement or the mod API may still need a code update. Full gameplay on v0.2.60 and later has not been newly verified for this metadata-only release. See [VERIFICATION.md](VERIFICATION.md).
+
 This repository contains **no ROMs, extracted ROM data or replacement Pokémon game assets**.
 
-## Installation
+## First installation
 
-Download the ready-to-import ZIP from the [Releases page](https://github.com/moocd123/gen1recomp-bicycle-plus/releases/latest).
+1. Download **`bicycle_plus-1.4.2.zip`** from the [release](https://github.com/moocd123/gen1recomp-bicycle-plus/releases/tag/v1.4.2) and **leave it zipped**.
+2. Open the launcher and go to **MODS → Import mod .zip**.
+3. Import the ZIP and enable **Bicycle Plus** for each edition you use.
+4. Launch the game and open **OPTION/OPTIONS → BICYCLE +**.
 
-1. Download `Bicycle_Plus-1.4.1-Gen1ReComp-0.2.60.zip` and **leave it zipped**.
-2. Open the Gen1ReComp++ launcher and go to **MODS**.
-3. Choose **Import mod .zip** and select the downloaded ZIP.
-4. Enable **Bicycle Plus** for each game edition you use.
-5. Launch the game and open **OPTION/OPTIONS → BICYCLE +**.
+Use the attached mod ZIP, **not GitHub's automatic Source code ZIP**. `SHA256SUMS.txt` is an optional download-integrity check, not another mod.
 
-Do **not** import GitHub's automatic Source code ZIP or a repository-upload ZIP; use the installable ZIP attached to a release. Despite the filename, v1.4.1 permits both declared engine versions.
+## One-time update from v1.4.0 or v1.4.1
 
-## Updating from v1.4.0
+Those packages did not declare the GitHub repository used for update discovery. They cannot discover this new release through that missing field. Install **v1.4.2 once manually** to add it:
 
-The mod ID remains `bicycle_plus`, and all six production Lua files are unchanged. Your colour selections, normal/cycling audio profiles, language preference and automatic-cycling setting keep the same storage keys.
+1. Save your game and return to the launcher's **MODS** tab.
+2. Delete **only the old Bicycle Plus mod entry**, then import `bicycle_plus-1.4.2.zip`.
+3. Enable the editions you use and fully close/reopen the app.
 
-For a local ZIP update, return to the launcher, select the old **Bicycle Plus** entry and choose **Delete**, then import the new release ZIP and enable the editions you use. Delete only this mod entry, not your saves or the whole mods folder. The supplied launcher's Delete action removes the installed mod and its enable flags, but retains the mod-options table. Fully close and reopen the application after replacing it.
+Do not delete your saves, app data or the whole mods folder. The inspected launcher retains the mod-options table when removing an installed mod. The mod ID and every runtime Lua file/settings key are unchanged, so existing settings keep the same namespace.
+
+## Keeping the mod updated afterwards
+
+Use the launcher's **Update All** (or its individual mod-update control). The manifest now declares:
+
+```json
+"github": "moocd123/gen1recomp-bicycle-plus"
+```
+
+The app checks this repository's GitHub releases, compares the installed version with the release tag, and selects the attached installable ZIP. The preferred asset name is **`bicycle_plus-<version>.zip`**. Future releases must keep increasing the mod version, match it in the `v<version>` tag, and attach that ZIP.
+
+**Update All is user-triggered, not an always-running background updater.** Updates only become available after a newer release is published. No extra updater code or network permission is added to Bicycle Plus; the host launcher owns fetching and installation.
 
 ## Controls
 
-Open **OPTION/OPTIONS → BICYCLE +**.
-
-### Bicycle colour editor
-
-Open **BIKE COLOUR** and use:
+Open **OPTION/OPTIONS → BICYCLE + → BIKE COLOUR**.
 
 - **Up / Down** — select WHEEL, STRIPE, CENTRE, EDGE or DETAILS.
 - **Left / Right** — change that part's colour.
@@ -84,31 +98,21 @@ If you deliberately dismount, Bicycle Plus remembers that choice for the current
 
 The normal **AUDIO** menu contains your normal area/SFX controls. **AUDIO → CYCLING** contains the riding profile.
 
-`ON BIKE` can be:
-
-- **BICYCLE** — original-style behaviour: bicycle music while riding, area music when you get off.
-- **AREA** — area music continues while riding.
-- **BOTH** — area and bicycle music play together.
+`ON BIKE` can be **BICYCLE** (bicycle music while riding, normal area music after dismounting), **AREA** (area music while riding) or **BOTH** (area and bicycle music together).
 
 Cycling-only area/SFX settings can be set to **SAME** to inherit the normal setting, or overridden independently. This allows quieter filtered area music underneath louder unfiltered bicycle music while cycling, with normal audio restored after dismounting.
 
 Area and bicycle music have independent volume and filter controls, and cycling SFX can use separate volume/filter settings.
 
-## Compatibility
+## Compatibility and release history
 
-Bicycle Plus was developed for **Gen1ReComp++ v0.2.59**. Version **1.4.1** extends its engine-version declaration to **v0.2.60**, without changing the runtime code. Existing companion-mod checks are historical v0.2.59 evidence, not a fresh full-stack test on v0.2.60. See [COMPATIBILITY.md](COMPATIBILITY.md).
+The runtime code is unchanged from **v1.4.0**, the first public release. Historical companion-mod checks were on **Gen1ReComp++ v0.2.59** and must not be read as a complete retest on every newer engine. Known compatibility work includes **Trainer Skins, Running Shoes, Auto Field Moves, HM Field Unlock and Wilds of Kanto**.
 
-Known compatibility work includes **Trainer Skins, Running Shoes, Auto Field Moves, HM Field Unlock and Wilds of Kanto**. Compatibility with every possible third-party mod cannot be guaranteed.
-
-## Release history
-
-**v1.4.0 was the first public release of Bicycle Plus.** See [CHANGELOG.md](CHANGELOG.md) for the public release history.
+See [COMPATIBILITY.md](COMPATIBILITY.md), [VERIFICATION.md](VERIFICATION.md) and [CHANGELOG.md](CHANGELOG.md). Compatibility with every third-party mod cannot be guaranteed.
 
 ## Source and release packaging
 
-The mod is written in Lua. Production source files in the repository are the same files packaged into the release ZIP.
-
-The scoped v1.4.1 publishing workflow verifies the manifest and all six runtime-file hashes, builds an installable ZIP from an explicit file allowlist, and publishes it with a SHA-256 checksum. It does not overwrite an existing release. This packaging check is not a gameplay test.
+The production Lua files in the repository are the same files packaged into the release ZIP. The scoped publishing workflow verifies the manifest and runtime hashes, builds an explicit allowlist into the installable ZIP, and publishes it with a SHA-256 checksum. It does not overwrite existing releases and downloads the published asset to verify it. Packaging checks are not gameplay tests.
 
 ## License
 
