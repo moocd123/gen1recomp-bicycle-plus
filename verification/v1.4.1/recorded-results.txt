@@ -1,0 +1,35 @@
+Retained output from the prepared v1.4.1 hotfix tests.
+These are headless checks using the supplied v0.2.59 engine modules and test doubles.
+Version.engine is a test input; these are not v0.2.60 gameplay runs.
+
+PASS native audio menu: 846 assertions
+Automount: 5589 assertions passed across six editions
+PASS 118721 bicycle part assertions
+PASS 31020 colour preview/palette/parts safety assertions
+PASS main/UI sandbox integration: 17672 assertions
+
+0.2.59 / red: old=ok (Ready); new=ok (Ready)
+0.2.59 / blue: old=ok (Ready); new=ok (Ready)
+0.2.59 / yellow: old=ok (Ready); new=ok (Ready)
+0.2.59 / gold: old=ok (Ready); new=ok (Ready)
+0.2.59 / silver: old=ok (Ready); new=ok (Ready)
+0.2.59 / crystal: old=ok (Ready); new=ok (Ready)
+0.2.60 / red: old=warn (Needs engine =0.2.59 (have 0.2.60)); new=ok (Ready)
+0.2.60 / blue: old=warn (Needs engine =0.2.59 (have 0.2.60)); new=ok (Ready)
+0.2.60 / yellow: old=warn (Needs engine =0.2.59 (have 0.2.60)); new=ok (Ready)
+0.2.60 / gold: old=warn (Needs engine =0.2.59 (have 0.2.60)); new=ok (Ready)
+0.2.60 / silver: old=warn (Needs engine =0.2.59 (have 0.2.60)); new=ok (Ready)
+0.2.60 / crystal: old=warn (Needs engine =0.2.59 (have 0.2.60)); new=ok (Ready)
+0.2.61 / red: old=warn (Needs engine =0.2.59 (have 0.2.61)); new=warn (Needs engine =0.2.59 || =0.2.60 (have 0.2.61))
+0.2.61 / blue: old=warn (Needs engine =0.2.59 (have 0.2.61)); new=warn (Needs engine =0.2.59 || =0.2.60 (have 0.2.61))
+0.2.61 / yellow: old=warn (Needs engine =0.2.59 (have 0.2.61)); new=warn (Needs engine =0.2.59 || =0.2.60 (have 0.2.61))
+0.2.61 / gold: old=warn (Needs engine =0.2.59 (have 0.2.61)); new=warn (Needs engine =0.2.59 || =0.2.60 (have 0.2.61))
+0.2.61 / silver: old=warn (Needs engine =0.2.59 (have 0.2.61)); new=warn (Needs engine =0.2.59 || =0.2.60 (have 0.2.61))
+0.2.61 / crystal: old=warn (Needs engine =0.2.59 (have 0.2.61)); new=warn (Needs engine =0.2.59 || =0.2.60 (have 0.2.61))
+0.2.58 / red: old=warn (Needs engine =0.2.59 (have 0.2.58)); new=warn (Needs engine =0.2.59 || =0.2.60 (have 0.2.58))
+0.2.58 / blue: old=warn (Needs engine =0.2.59 (have 0.2.58)); new=warn (Needs engine =0.2.59 || =0.2.60 (have 0.2.58))
+0.2.58 / yellow: old=warn (Needs engine =0.2.59 (have 0.2.58)); new=warn (Needs engine =0.2.59 || =0.2.60 (have 0.2.58))
+0.2.58 / gold: old=warn (Needs engine =0.2.59 (have 0.2.58)); new=warn (Needs engine =0.2.59 || =0.2.60 (have 0.2.58))
+0.2.58 / silver: old=warn (Needs engine =0.2.59 (have 0.2.58)); new=warn (Needs engine =0.2.59 || =0.2.60 (have 0.2.58))
+0.2.58 / crystal: old=warn (Needs engine =0.2.59 (have 0.2.58)); new=warn (Needs engine =0.2.59 || =0.2.60 (have 0.2.58))
+PASS 45 manifest and real launcher version-gate assertions

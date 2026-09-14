@@ -34,7 +34,7 @@ jobs:
         working-directory: source
         run: python3 .github/scripts/build_release.py
 
-      - name: Publish v1.4.1 with the installable ZIP
+      - name: Publish v1.4.1 without overwriting any existing release
         working-directory: source
         env:
           GH_TOKEN: ${{ github.token }}
@@ -42,16 +42,29 @@ jobs:
           SOURCE_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          # Never overwrite a release or any of its assets.
           if gh release view v1.4.1 >/dev/null 2>&1; then
             echo 'v1.4.1 already exists; no existing release was modified.'
-            exit 0
+          else
+            gh release create v1.4.1 \
+              dist/Bicycle_Plus-1.4.1-Gen1ReComp-0.2.60.zip \
+              dist/SHA256SUMS.txt \
+              --target "$SOURCE_SHA" \
+              --title 'Bicycle Plus v1.4.1' \
+              --notes-file RELEASE_NOTES_v1.4.1.md \
+              --latest
           fi
-          gh release create v1.4.1 \
-            dist/Bicycle_Plus-1.4.1-Gen1ReComp-0.2.60.zip \
-            dist/SHA256SUMS.txt \
-            --target "$SOURCE_SHA" \
-            --title 'Bicycle Plus v1.4.1' \
-            --notes-file RELEASE_NOTES_v1.4.1.md \
-            --latest
           gh release view v1.4.1 --json url,tagName,assets
+
+      - name: Download the published assets and verify their bytes
+        working-directory: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          mkdir downloaded
+          gh release download v1.4.1 --pattern '*.zip' --pattern 'SHA256SUMS.txt' --dir downloaded
+          cmp dist/Bicycle_Plus-1.4.1-Gen1ReComp-0.2.60.zip downloaded/Bicycle_Plus-1.4.1-Gen1ReComp-0.2.60.zip
+          cmp dist/SHA256SUMS.txt downloaded/SHA256SUMS.txt
+          cd downloaded
+          sha256sum --check SHA256SUMS.txt

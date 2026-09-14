@@ -1,7 +1,7 @@
 {
   "id": "bicycle_plus",
   "name": "Bicycle Plus",
-  "version": "1.4.1",
+  "version": "1.4.0",
   "api": 2,
   "entry": "main.lua",
   "profile": "content",
@@ -14,7 +14,7 @@
     "silver",
     "crystal"
   ],
-  "game_version": "=0.2.59 || =0.2.60",
+  "game_version": "=0.2.59",
   "priority": 110,
   "optional_dependencies": [
     "trainer_skins"
@@ -23,5 +23,5 @@
     "engine_internals"
   ],
   "affects_link": false,
-  "description": "Automatic cycling, independent normal/cycling audio mixes, and animated bicycle colours for the wheel, stripe, centre, edge and details with Trainer Skins compatibility. Gen1ReComp++ v0.2.59 / v0.2.60."
+  "description": "Automatic cycling, independent normal/cycling audio mixes, and animated bicycle colours for the wheel, stripe, centre, edge and details with Trainer Skins compatibility. Gen1ReComp++ v0.2.59."
 }

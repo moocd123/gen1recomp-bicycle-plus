@@ -1,10 +1,14 @@
-# Bicycle Plus 1.4.0 compatibility
+# Bicycle Plus 1.4.1 compatibility
 
-Bicycle Plus targets **Gen1ReComp++ v0.2.59** and supports **Pokémon Red, Blue, Yellow, Gold, Silver and Crystal**.
+The v1.4.1 manifest accepts **Gen1ReComp++ v0.2.59 or v0.2.60** and retains the six game targets: **Red, Blue, Yellow, Gold, Silver and Crystal**.
 
-The mod is written in portable Lua and is intended to work on any platform supported by Gen1ReComp++ v0.2.59 that exposes the normal mod-loading system. It does not depend on a platform-specific executable, native library, fixed path or keyboard-only control scheme. Not every physical platform or device has been individually tested.
+**Verification scope:** v1.4.1 is a version-gate hotfix, not an engine-port rewrite. Its six runtime Lua files are identical to v1.4.0. The prepared hotfix checks used the supplied v0.2.59 engine modules and test doubles. For the launcher check, `Version.engine` was varied as an input; this is not execution of a downloaded v0.2.60 runtime. Full v0.2.60 gameplay, rendering and audio-device verification remain pending.
 
-## Companion mods checked during development
+The mod is written in portable Lua and is intended to work on any platform supported by the declared Gen1ReComp++ versions that exposes the normal mod-loading system. It does not depend on a platform-specific executable, native library, fixed path or keyboard-only control scheme. Not every physical platform or device has been individually tested.
+
+## Historical companion checks on Gen1ReComp++ v0.2.59
+
+The following table is retained from the first public release. These companion versions were not freshly exercised against a v0.2.60 runtime for this update.
 
 | Companion mod | Version checked | Package scope |
 | --- | --- | --- |
@@ -30,12 +34,12 @@ Additional rendering checks were performed with Dramaless Shape 2.0.4. Kanto Fir
 
 - **Trainer Skins:** Bicycle recolouring is designed to preserve trainer clothing, hair, skin, hands and shoes while recolouring supported bicycle pixels.
 - **Running Shoes:** Bicycle Plus does not replace movement-speed handling.
-- **Auto Field Moves / HM Field Unlock:** Cycling can transition normally into game-supported field actions such as Surf.
+- **Auto Field Moves / HM Field Unlock:** Cycling can transition into game-supported field actions such as Surf.
 - **Wilds of Kanto:** Automatic mounting waits while Wilds is controlling a Pokémon rather than the trainer.
 - **Unknown replacement bicycle artwork:** Bicycle Plus avoids blindly recolouring artwork it cannot safely classify.
 
 ## Scope
 
-Compatibility testing covers the versions and interactions listed above. It cannot guarantee compatibility with every future version or every third-party mod, especially mods that completely replace the same rendering, world-control, menu or audio hooks without chaining their predecessors.
+These checks cover the versions and interactions listed above. They do not guarantee compatibility with every future version or every third-party mod, especially mods that replace the same rendering, world-control, menu or audio hooks without chaining their predecessors.
 
-Supporting all six games does not force another mod to work in a game that its own manifest excludes.
+Supporting all six games does not force another mod to work in a game that its own manifest excludes. See [VERIFICATION.md](VERIFICATION.md) for this update's testing limits.

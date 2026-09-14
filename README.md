@@ -1,17 +1,19 @@
 # Bicycle Plus
 
-A quality-of-life and customisation mod for **Gen1ReComp++ v0.2.59**.
+A quality-of-life and customisation mod for **Gen1ReComp++**.
+
+**Current release: v1.4.1 — engine-version compatibility hotfix.** The manifest now accepts **v0.2.59 and v0.2.60**. This corrects the version restriction; full gameplay on v0.2.60 has not been verified. See [VERIFICATION.md](VERIFICATION.md).
+
+**[Download the installable mod ZIP](https://github.com/moocd123/gen1recomp-bicycle-plus/releases/download/v1.4.1/Bicycle_Plus-1.4.1-Gen1ReComp-0.2.60.zip)** · **[Release notes](https://github.com/moocd123/gen1recomp-bicycle-plus/releases/tag/v1.4.1)**
 
 Bicycle Plus automatically mounts the Bicycle when entering an area where cycling is allowed, remembers deliberate dismounts for the current area, adds separate normal/cycling audio profiles, and lets you customise five visible parts of the bicycle while preserving the original pixel scale and animation.
-
-![Bicycle Plus animated colour editor](docs/bicycle-plus-preview.gif)
 
 ## Features
 
 - **Automatic cycling** when entering an eligible area while the Bicycle is in your inventory.
-- **Manual dismount memory**: if you get off deliberately, you stay on foot until you remount or enter a new eligible area.
+- **Manual dismount memory:** getting off deliberately keeps you on foot until you remount or enter a new eligible area.
 - **Normal and cycling audio profiles** with independent area music, bicycle music and SFX behaviour.
-- **Cycling mix modes**: Bicycle, Area or Both.
+- **Cycling mix modes:** Bicycle, Area or Both.
 - Independent **volume** and **filter** controls for area music, bicycle music and cycling SFX.
 - Five independent bicycle colour controls:
   - **WHEEL** — main coloured wheel area.
@@ -26,13 +28,13 @@ Bicycle Plus automatically mounts the Bicycle when entering an area where cyclin
 
 ## Platform support
 
-Bicycle Plus is written in portable Lua and is intended to work on **any platform supported by Gen1ReComp++ v0.2.59** that provides the normal mod-loading system.
+Bicycle Plus is written in portable Lua and is intended to work on **any platform supported by the declared Gen1ReComp++ versions** that provides the normal mod-loading system.
 
-It does not contain platform-specific executables, libraries, file paths or keyboard-only controls. Not every physical device and operating system can be individually tested, so platform-specific issues can still be reported through GitHub Issues.
+It does not contain platform-specific executables, libraries, file paths or keyboard-only controls. Not every physical device and operating system has been individually tested; platform-specific issues can be reported through [GitHub Issues](https://github.com/moocd123/gen1recomp-bicycle-plus/issues).
 
 ## Requirements
 
-- **Gen1ReComp++ v0.2.59**.
+- **Gen1ReComp++ v0.2.59 or v0.2.60**, with the verification limits above.
 - A legally obtained supported Pokémon ROM imported through Gen1ReComp++.
 - Trainer Skins is optional.
 
@@ -42,13 +44,19 @@ This repository contains **no ROMs, extracted ROM data or replacement Pokémon g
 
 Download the ready-to-import ZIP from the [Releases page](https://github.com/moocd123/gen1recomp-bicycle-plus/releases/latest).
 
-1. Download `Bicycle_Plus-1.4.0-Gen1ReComp-0.2.59.zip` and **leave it zipped**.
+1. Download `Bicycle_Plus-1.4.1-Gen1ReComp-0.2.60.zip` and **leave it zipped**.
 2. Open the Gen1ReComp++ launcher and go to **MODS**.
 3. Choose **Import mod .zip** and select the downloaded ZIP.
 4. Enable **Bicycle Plus** for each game edition you use.
 5. Launch the game and open **OPTION/OPTIONS → BICYCLE +**.
 
-Do **not** download the repository itself as a ZIP and import that into Gen1ReComp++; use the ZIP attached to a GitHub Release.
+Do **not** import GitHub's automatic Source code ZIP or a repository-upload ZIP; use the installable ZIP attached to a release. Despite the filename, v1.4.1 permits both declared engine versions.
+
+## Updating from v1.4.0
+
+The mod ID remains `bicycle_plus`, and all six production Lua files are unchanged. Your colour selections, normal/cycling audio profiles, language preference and automatic-cycling setting keep the same storage keys.
+
+For a local ZIP update, return to the launcher, select the old **Bicycle Plus** entry and choose **Delete**, then import the new release ZIP and enable the editions you use. Delete only this mod entry, not your saves or the whole mods folder. The supplied launcher's Delete action removes the installed mod and its enable flags, but retains the mod-options table. Fully close and reopen the application after replacing it.
 
 ## Controls
 
@@ -64,7 +72,7 @@ Open **BIKE COLOUR** and use:
 
 Available choices are **Original, Red, Orange, Yellow, Green, Cyan, Blue, Purple, Pink, Brown, Silver, Black and White**.
 
-The game sprite remains on its original **16×16 pixel grid**. The mod recolours existing bicycle pixels rather than resizing the sprite. The preview is enlarged only so the individual pixels are easier to see.
+The game sprite remains on its original **16×16 pixel grid**. The mod recolours bicycle pixels rather than resizing the sprite. The preview is enlarged only so the individual pixels are easier to see.
 
 ## Automatic cycling
 
@@ -82,31 +90,31 @@ The normal **AUDIO** menu contains your normal area/SFX controls. **AUDIO → CY
 - **AREA** — area music continues while riding.
 - **BOTH** — area and bicycle music play together.
 
-Cycling-only area/SFX settings can be set to **SAME** to inherit the normal setting, or overridden independently. This allows combinations such as quieter filtered area music underneath louder unfiltered bicycle music while cycling, with normal audio restored immediately after dismounting.
+Cycling-only area/SFX settings can be set to **SAME** to inherit the normal setting, or overridden independently. This allows quieter filtered area music underneath louder unfiltered bicycle music while cycling, with normal audio restored after dismounting.
 
-Area and bicycle music have independent volume and filter controls, and cycling SFX can also use separate volume/filter settings.
+Area and bicycle music have independent volume and filter controls, and cycling SFX can use separate volume/filter settings.
 
 ## Compatibility
 
-Bicycle Plus was developed for **Gen1ReComp++ v0.2.59**. See [COMPATIBILITY.md](COMPATIBILITY.md) for the exact companion-mod versions and interactions checked during development.
+Bicycle Plus was developed for **Gen1ReComp++ v0.2.59**. Version **1.4.1** extends its engine-version declaration to **v0.2.60**, without changing the runtime code. Existing companion-mod checks are historical v0.2.59 evidence, not a fresh full-stack test on v0.2.60. See [COMPATIBILITY.md](COMPATIBILITY.md).
 
 Known compatibility work includes **Trainer Skins, Running Shoes, Auto Field Moves, HM Field Unlock and Wilds of Kanto**. Compatibility with every possible third-party mod cannot be guaranteed.
 
-## First public release
+## Release history
 
-**v1.4.0 is the first public release of Bicycle Plus.** Earlier version numbers were internal development iterations and were never published as public releases.
+**v1.4.0 was the first public release of Bicycle Plus.** See [CHANGELOG.md](CHANGELOG.md) for the public release history.
 
-See [CHANGELOG.md](CHANGELOG.md) for the public release history.
+## Source and release packaging
 
-## Source
+The mod is written in Lua. Production source files in the repository are the same files packaged into the release ZIP.
 
-The mod is written in Lua and uses the Gen1ReComp++ mod API. The production files in this repository are the same source files packaged into the release ZIP.
+The scoped v1.4.1 publishing workflow verifies the manifest and all six runtime-file hashes, builds an installable ZIP from an explicit file allowlist, and publishes it with a SHA-256 checksum. It does not overwrite an existing release. This packaging check is not a gameplay test.
 
 ## License
 
 Bicycle Plus source code is released under the **MIT License**. See [LICENSE](LICENSE).
 
-Gen1ReComp++ is a separate project and is also distributed under the MIT License. Pokémon and related names, characters and game content are the property of their respective owners. This is an unofficial fan-made mod and is not affiliated with or endorsed by Nintendo, Creatures Inc. or GAME FREAK.
+Gen1ReComp++ is a separate project. Pokémon and related names, characters and game content are the property of their respective owners. This is an unofficial fan-made mod and is not affiliated with or endorsed by Nintendo, Creatures Inc. or GAME FREAK.
 
 ## Upstream
 
