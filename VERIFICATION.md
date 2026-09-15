@@ -1,35 +1,23 @@
-# Bicycle Plus v1.6.0 verification
+# Bicycle Plus v1.7.0 verification
 
 ## Scope
 
-This release changes the colour controls, palette organisation and bicycle pixel masks. **audio.lua, audio_menu.lua and automount.lua are byte-for-byte unchanged** from v1.5.0. Mod ID `bicycle_plus`, settings keys, API 2, the `>=0.2.59` range and the GitHub update source are retained. The only new per-part setting is `bike_handlebars_colour`, default Original.
+A colour-interface update based on the published v1.6.0. It adds an exact RGB value adapter and compact UI helper, replaces the picker, updates colour-menu persistence, and crops the published three-view preview to show a chosen facing. `audio.lua`, `audio_menu.lua`, `automount.lua`, `bike_parts.lua`, `colours.lua` and `hardware_colours.lua` are unchanged from published v1.6.0. The original renderer's palette, mask and world-paint paths remain intact.
 
-The user-supplied Trainer Skins v0.2.0 ZIP has SHA-256 `9295d0f2749d9e5519257fdb6609f781af3b8482cfc91e28fcd2a0437cd5ce36`. Its actual Lua palette table contains ten named accents plus a separate True Color mode. Its older README's three-colour description is not used as the source of truth.
+## Automated checks
 
-## Reproducible tests
+- All 32,768 old RGB555 values preserve their expansion. RGB555/HSV round trips, unrounded RGB values, hex validation, invalid channel rejection and exact known-colour references are checked.
+- The real Screens and StateStack modules construct the menus across six game contexts. Input, device and graphics boundaries are simulated. Checks cover all six Original/Custom controls, last-custom persistence, draft cancellation, reset isolation, keyboard/paste/keypad entry, pointer coordinate transforms, drag cancellation, UI text bounds/overlap and safe-mode write rejection.
+- The native SpriteRenderer is exercised using software ImageData/graphics. Every part can receive a non-RGB555 value; other pixels and alpha remain unchanged relative to the published masks. Front-facing handlebar preview, three-view preview, Original restoration and resolver cleanup are checked.
+- Native Manifest and ModUpdate code validates the retained GitHub source, minimum engine/API requirement, version ordering and preferred release asset. This test does not perform a real end-user network installation.
+- The builder checks an explicit runtime hash list and packages only reviewed source/documents. The workflow downloads the published ZIP and verifies its exact bytes/checksum.
 
-From the repository root, with Lua 5.3 or texlua and an engine directory:
+Local checks used modules extracted from the supplied v0.2.59 Windows executable and 26 true-colour/quantised cases from the uploaded Trainer Skins v0.2.0 archive, plus two procedural sprite cases. Publication checks use upstream v0.2.60 commit `4dadfd55a88e796c15fa7549b7c56e60e7c9b6d5`, and hash-checked native/Trainer Skins test fixtures prepared by the existing v1.6.0 fixture script. No test artwork is bundled in the release.
 
-```sh
-python3 verification/v1.6.0/prepare_fixtures.py ../fixtures/sheets.lua
-lua5.3 verification/v1.6.0/check_colours.lua /path/to/engine
-lua5.3 verification/v1.6.0/check_menu.lua /path/to/engine
-lua5.3 verification/v1.6.0/check_renderer.lua /path/to/engine ../fixtures/sheets.lua
-lua5.3 verification/v1.6.0/check_updater.lua /path/to/engine
-python3 .github/scripts/build_release.py
-```
+See [Actions](https://github.com/moocd123/gen1recomp-bicycle-plus/actions) for actual publication outcomes and logs. Test assertion counts are implementation details, not coverage guarantees.
 
-The fixture preparer needs Pillow and network access to fetch three immutable PNG Git blobs and two hash-pinned Trainer Skins archives. It creates temporary data outside the mod. Optional `--native-dir` and `--trainer-zip` arguments allow local testing with the provided v0.2.0 archive instead of downloading both companion versions.
+## Limits
 
-- **Colour catalogue:** exhaustive 32,768-word round trips, unique RGB output, deduplication, Original, section partition/order, per-section RRGGBB ordering, exact saved-value aliases and full trainer labels.
-- **Native menus:** actual Screens/StateStack with production menu code in six edition contexts. Input, drawing and unchanged audio/movement services are test doubles. Tests cover every section and label, text bounds/overlap, pending previews, cancellation, one-write colour application, colour-only reset, default-NO confirmation, failed-write rollback, safe mode, UK/US spelling and untouched trainer/audio settings.
-- **Source pixels:** actual PNG sheets through the native SpriteRenderer with software ImageData/graphics. Each part is recoloured alone; every other pixel/alpha is compared with the original resolved image. Separately specified handlebar/hand coordinates are checked, including Dawn/Hilda foreground cutouts. Both true-colour and luminance-quantised trainer sheets are checked. These are not GPU or device tests.
-- **Updater:** native Manifest, launcher and Update All code. Release lookup/network and filesystem installation are simulated; versions 1.4.2 and 1.5.0 queue 1.6.0, current/newer versions do not reinstall/downgrade, and offline failure does not install. The engine version is an explicit test input, not a gameplay claim.
+No new physical phone, OS clipboard/keyboard, hardware GPU, controller driver, network updater or full gameplay session was tested here. Software tests cannot prove that every device or companion mod combination behaves correctly. Real-device feedback remains necessary. The open engine range is a version declaration, not a promise that future breaking API changes will be compatible.
 
-Local tests use the supplied v0.2.59 Windows package's extracted Lua modules. The publication workflow repeats them against the official v0.2.60 source pinned to commit `4dadfd55a88e796c15fa7549b7c56e60e7c9b6d5`, including both companion releases' artwork. Consult the actual Actions run for its outcome.
-
-## Release integrity and limitations
-
-The builder checks the exact manifest and SHA-256 of all nine production Lua modules, packages an explicit allowlist, creates per-file integrity metadata and checks the ZIP. The workflow downloads the published ZIP and checksum and compares their bytes with the build. Existing releases are never overwritten.
-
-No ROMs, engine executables, sprite fixtures, trainer images, fonts, songs or private save data are included. No fresh full-gameplay, full-mod-stack or physical S24 Ultra test is claimed. The open engine range is not a guarantee against future breaking changes. Pixel-region interpretation and conservative exclusions are documented in docs/BICYCLE_REGIONS.md.
+Colour descriptions are exact matches to recorded digital references. LCD-look labels are approximations; unmatched colours are not assigned a historical name. New custom paint supports 24-bit RGB; old hardware-limited selections are neither discarded nor silently reinterpreted.

@@ -5,7 +5,7 @@ return function(mod)
       "@bicycle_plus/" .. name .. ".lua"))()
   end
 
-  local Hardware = module("hardware_colours")
+  local Hardware = module("colour_values").extend(module("hardware_colours"))
   local colourChoices = Hardware.quickChoices
   local colourKeys = {bike_colour=true, bike_stripes_colour=true,
     bike_centres_colour=true, bike_tyres_colour=true, bike_frame_colour=true, bike_handlebars_colour=true}
@@ -202,9 +202,10 @@ return function(mod)
     getSetting=getSetting, setSetting=setSetting,
   })
 
+  local UI = module("colour_ui").init(mod)
   local picker = module("colour_picker").init(mod, {
     hardware=Hardware, colours=colours, getSetting=getSetting, setSetting=setSetting,
-    colourWord=colourWord,
+    colourWord=colourWord, ui=UI,
   })
 
   local function cycle(choices, value, direction)
@@ -282,7 +283,7 @@ return function(mod)
   local controls = module("colour_controls").init(mod, {
     hardware=Hardware, colours=colours, picker=picker, getSetting=getSetting,
     setSetting=setSetting, migrate=migrateSettings, refreshOptions=defineOptions,
-    colourWord=colourWord, centreWord=centreWord, palette=palette, previewPalette=previewPalette,
+    colourWord=colourWord, ui=UI, centreWord=centreWord, palette=palette, previewPalette=previewPalette,
   })
 
   mod.hooks:wrap("ui.options.rows", function(next,game,rows)
@@ -333,6 +334,8 @@ return function(mod)
   mod.exports.openColourPicker=picker.open
   mod.exports.resetColours=controls.reset
   mod.exports.bikeArtStyle=colours.artStyle
+  mod.exports.colourUI=UI
+  mod.exports.picker=picker
   mod.exports.setSetting=setSetting
   mod.exports.status=function()
     return {automount=automount.status and automount.status(),

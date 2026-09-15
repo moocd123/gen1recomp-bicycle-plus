@@ -1,19 +1,26 @@
-name: Publish Bicycle Plus v1.6.0
+name: Publish Bicycle Plus v1.7.0
+
 on:
   push:
     branches: [main]
-    paths: [manifest.json, RELEASE_NOTES_v1.6.0.md]
+    paths:
+      - manifest.json
+      - RELEASE_NOTES_v1.7.0.md
+      - .github/workflows/publish-v1.7.0.yml
   workflow_dispatch:
+
 permissions:
   contents: write
+
 concurrency:
-  group: bicycle-plus-release-v1.6.0
+  group: bicycle-plus-release-v1.7.0
   cancel-in-progress: false
+
 jobs:
   publish:
     if: github.repository == 'moocd123/gen1recomp-bicycle-plus' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Check out the exact source commit
         env:
@@ -23,6 +30,7 @@ jobs:
           set -euo pipefail
           git clone --no-checkout "https://github.com/${REPO}.git" source
           git -C source checkout --detach "$SOURCE_SHA"
+
       - name: Obtain pinned engine and hash-checked artwork for tests only
         run: |
           set -euo pipefail
@@ -31,17 +39,21 @@ jobs:
           git clone --depth 1 --filter=blob:none --sparse --branch v0.2.60 https://github.com/bryanthaboi/gen1recomp.git engine
           test "$(git -C engine rev-parse HEAD)" = '4dadfd55a88e796c15fa7549b7c56e60e7c9b6d5'
           git -C engine sparse-checkout set src data
-          /usr/bin/python3 source/verification/v1.6.0/prepare_fixtures.py fixtures/sheets.lua
-      - name: Check palette sections, native menus, actual source pixels and updater
+          cd source
+          /usr/bin/python3 verification/v1.6.0/prepare_fixtures.py ../fixtures.lua
+
+      - name: Check RGB values, native menus, source pixels and updater metadata
         working-directory: source
         run: |
           set -euo pipefail
-          for suite in check_colours check_menu check_renderer check_updater; do
-            lua5.3 "verification/v1.6.0/${suite}.lua" ../engine ../fixtures/sheets.lua
+          for suite in check_values check_menu check_renderer check_updater; do
+            lua5.3 "verification/v1.7.0/${suite}.lua" ../engine ../fixtures.lua
           done
+
       - name: Build reviewed source-only release
         working-directory: source
         run: python3 .github/scripts/build_release.py
+
       - name: Publish without overwriting existing releases
         working-directory: source
         env:
@@ -50,14 +62,17 @@ jobs:
           SOURCE_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          if gh release view v1.6.0 >/dev/null 2>&1; then
-            echo 'Release already exists; it was not modified.'
+          if gh release view v1.7.0 >/dev/null 2>&1; then
+            echo 'v1.7.0 already exists; no existing release was modified.'
           else
-            gh release create v1.6.0 dist/bicycle_plus-1.6.0.zip dist/SHA256SUMS.txt \
-              --target "$SOURCE_SHA" --title 'Bicycle Plus v1.6.0 - Handlebars and colour sections' \
-              --notes-file RELEASE_NOTES_v1.6.0.md --latest
+            gh release create v1.7.0 \
+              dist/bicycle_plus-1.7.0.zip dist/SHA256SUMS.txt \
+              --target "$SOURCE_SHA" \
+              --title 'Bicycle Plus v1.7.0 - Original/Custom colour editor' \
+              --notes-file RELEASE_NOTES_v1.7.0.md --latest
           fi
-          gh release view v1.6.0 --json url,tagName,assets
+          gh release view v1.7.0 --json url,tagName,assets
+
       - name: Download published assets and verify exact bytes
         working-directory: source
         env:
@@ -66,8 +81,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir downloaded
-          gh release download v1.6.0 --pattern 'bicycle_plus-1.6.0.zip' --pattern 'SHA256SUMS.txt' --dir downloaded
-          cmp dist/bicycle_plus-1.6.0.zip downloaded/bicycle_plus-1.6.0.zip
+          gh release download v1.7.0 --pattern 'bicycle_plus-1.7.0.zip' --pattern 'SHA256SUMS.txt' --dir downloaded
+          cmp dist/bicycle_plus-1.7.0.zip downloaded/bicycle_plus-1.7.0.zip
           cmp dist/SHA256SUMS.txt downloaded/SHA256SUMS.txt
           cd downloaded
           sha256sum --check SHA256SUMS.txt

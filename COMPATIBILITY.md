@@ -1,48 +1,15 @@
-# Bicycle Plus v1.6.0 compatibility
+# Bicycle Plus v1.7.0 compatibility
 
-The manifest retains **Gen1ReComp++ >=0.2.59**, mod API 2, and Red, Blue, Yellow, Gold, Silver and Crystal. The open version range prevents version-number-only rejection; it does not guarantee compatibility with future breaking engine changes.
+The mod retains Red, Blue, Yellow, Gold, Silver and Crystal targeting, mod API 2 and the `>=0.2.59` engine declaration. No upper engine limit is imposed; future breaking changes may still require a fix.
 
-The GitHub source remains `moocd123/gen1recomp-bicycle-plus`. Users with v1.4.2 or later can use Check for updates / Update All. Older packages need a one-time manual installation to acquire that source. In-app downloads depend on the host's network support; the mod contains portable Lua rather than platform-specific binaries.
+`audio.lua`, `audio_menu.lua`, `automount.lua`, `bike_parts.lua`, `colours.lua` and `hardware_colours.lua` are byte-for-byte unchanged from the published v1.6.0. The new editor passes validated RGB values into the same renderer. It does not replace trainer artwork, change movement speed or alter audio profiles.
 
-## This update
+The six visible regions remain conservative Gen 1 / Gen 2-style pixel mappings chosen from the active artwork. Shared outlines are not official anatomical labels. Trainer Skins 0.1.0/0.2.0 palette-lifecycle handling is retained, as are safeguards for Wilds of Kanto and unrelated renderer chains. Unknown artwork can require a separate mapping review.
 
-The audio, audio-menu and automatic-mounting modules are unchanged. HANDLEBARS is added with separate Gen 1/Gen 2-shaped mappings selected from the active artwork, including Trainer Skins in Gen 1 games. Wheel-border ownership and protected shared shoe pixels are corrected. RESET COLOURS affects only six bicycle-colour settings. Existing values are retained, but the corrected regions can look different under an existing EDGE/DETAILS selection.
+Existing aliases and RGB555 IDs retain their old colour values. New `rgb:RRGGBB` values are exact 24-bit colours. Reset restores the six main colour keys to Original; remembered custom values, trainer/rival selections, audio, language and automatic cycling are not erased.
 
-The supplied Trainer Skins v0.2.0 archive is verified by hash and its actual code supplies the ten accent references. The old README is not used to infer how many colours exist. Native source-pixel checks include true-colour and quantised trainer sheets; the publication workflow also checks the earlier v0.1.0 artwork. See [VERIFICATION.md](VERIFICATION.md) and [BICYCLE_REGIONS.md](docs/BICYCLE_REGIONS.md).
+Pointer and keyboard input use the native hooks. Virtual controls take priority before the picker. Pointer mapping supports the standard game viewport/letterbox; third-party output transforms can require additional integration. A compact Lua-drawn alphabet and solid markers avoid reliance on missing menu glyphs.
 
-These tests use actual source images and native Lua modules, with software graphics/input/network boundaries. They are not a new physical-device gameplay or complete companion-mod-stack test.
+Automated checks use engine modules with software graphics/input boundaries. Actual sprite PNGs can be used in the renderer test without including them in the release. These checks do not certify every companion feature, every physical device or complete gameplay on v0.2.60. See [VERIFICATION.md](VERIFICATION.md).
 
-## Historical companion checks on Gen1ReComp++ v0.2.59
-
-The following versions were checked during development, not freshly verified across every later engine.
-
-| Companion mod | Version checked | Package scope |
-| --- | --- | --- |
-| Access PC Anywhere | 1.0.1 | Gen 1 |
-| Auto Field Moves | 1.1.5 | Gen 1 |
-| Bill's PC Plus | 0.15.1 | Gen 1 + Gen 2 |
-| Caught Indicator | 1.4.1 | Gen 1 |
-| EXP Bar | 1.1.2 | Gen 1 |
-| HM Field Unlock | 1.1.0 | Gen 1 |
-| Mute Low HP Alarm | 1.1.0 | Gen 1 |
-| Pokeball Colors | 0.1.73 | Gen 1 + Gen 2 |
-| Repel Reuse Prompt | 1.0.1 | Gen 1 |
-| Running Shoes | 1.1.2 | Gen 1 |
-| Shiny Pokemon | 1.0.1 | Gen 1 |
-| TM/HM Move Names | 1.0.0 | Gen 1 |
-| Trainer Skins | 0.1.0 and 0.2.0 | Gen 1 + Gen 2 |
-| Unique Menu Icons | 1.5.0 | Gen 1 + Gen 2 |
-| Wilds of Kanto | 2.1.9 | Gen 1 + Gen 2 |
-
-Additional rendering checks were performed with Dramaless Shape 2.0.4. Kanto First Person 1.8.3 had a separate dependency/activation issue with that Dramaless pairing even without Bicycle Plus; Bicycle Plus does not modify either mod.
-
-
-## Compatibility behaviour
-
-- **Trainer Skins:** bicycle recolouring preserves supported trainer clothing, hair, skin, hands and shoes.
-- **Running Shoes:** Bicycle Plus does not replace movement-speed handling.
-- **Auto Field Moves / HM Field Unlock:** cycling can transition into supported field actions such as Surf.
-- **Wilds of Kanto:** automatic mounting waits while controlling a Pokémon instead of the trainer.
-- **Unknown replacement bicycle artwork:** the mod avoids blindly recolouring artwork it cannot safely classify.
-
-Supporting all six games does not extend a companion mod beyond the editions its own manifest permits. Compatibility with every third-party mod cannot be guaranteed.
+The [v1.6.0 compatibility record](https://github.com/moocd123/gen1recomp-bicycle-plus/blob/v1.6.0/COMPATIBILITY.md) remains available as historical evidence; it is not a new full-stack retest for this release.

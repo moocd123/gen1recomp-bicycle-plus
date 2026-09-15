@@ -1,118 +1,70 @@
 # Bicycle Plus
 
-A quality-of-life and customisation mod for **Gen1ReComp++**.
+Automatic cycling, independent cycling audio settings and bicycle colour customisation for Gen1ReComp++.
 
-**Current release: v1.6.0 — handlebars and organised colour controls.** Includes a six-part editor, a confirmed colour reset and hex-sorted system/trainer sections. See [verification limits](VERIFICATION.md).
+**Current release: v1.7.0 — Original/Custom colour editor.**
 
-**[Download the installable mod ZIP](https://github.com/moocd123/gen1recomp-bicycle-plus/releases/download/v1.6.0/bicycle_plus-1.6.0.zip)** · **[Release notes](https://github.com/moocd123/gen1recomp-bicycle-plus/releases/tag/v1.6.0)**
+[Download and release notes](https://github.com/moocd123/gen1recomp-bicycle-plus/releases/latest) · [Report an issue](https://github.com/moocd123/gen1recomp-bicycle-plus/issues)
 
-Bicycle Plus automatically mounts the Bicycle when entering an area where cycling is allowed, remembers deliberate dismounts for the current area, adds separate normal/cycling audio profiles, and lets you customise six visible parts of the bicycle while preserving the original pixel scale and animation.
+## Install or update
+
+Already using v1.4.2 or later? In the launcher, choose **MODS → Check for updates → Update All**. Relaunch the game after updating. The mod ID remains `bicycle_plus` and its update source remains this repository.
+
+New users: download **bicycle_plus-1.7.0.zip** from the release assets, leave it zipped, import it in **MODS**, then enable Bicycle Plus for the editions you play. Do not import GitHub's automatically generated Source code ZIP.
+
+Users on v1.4.0/v1.4.1 need a one-time manual update because those versions lack the GitHub update source. Delete only the old Bicycle Plus entry in MODS, import the new package and enable it. Do not delete saves or app data.
 
 ## Features
 
-- **Automatic cycling** when entering an eligible area while the Bicycle is in your inventory.
-- **Manual dismount memory:** getting off deliberately keeps you on foot until you remount or enter a new eligible area.
-- **Normal and cycling audio profiles** with independent area music, bicycle music and SFX behaviour.
-- **Cycling mix modes:** Bicycle, Area or Both.
-- Independent **volume** and **filter** controls for area music, bicycle music and cycling SFX.
-- Six independent bicycle colour controls:
-  - **WHEEL** — main coloured wheel area.
-  - **STRIPE** — animated moving accent around the wheel.
-  - **CENTRE** — small centre block of each wheel.
-  - **EDGE** — outer wheel outline.
-  - **DETAILS** — the small remaining side stem/grip-adjacent outline.
-  - **HANDLEBARS** — the exposed front crossbar and projecting side-view end.
-- **All 32,768 GBC RGB555 colours**, plus deduplicated game/LCD/trainer presets and **Original** for every part.
-- Animated three-direction preview; a compact side preview in the full colour grid.
-- Preview a choice before saving it: **A** applies, **B** goes back and **Start** cancels the picker.
-- **English UK / English US** spelling option (`COLOUR/CENTRE` or `COLOR/CENTER`).
-- Compatibility work for **Trainer Skins 0.1.0 and 0.2.0**.
-- Supports **Pokémon Red, Blue, Yellow, Gold, Silver and Crystal** in Gen1ReComp++.
-- GitHub release discovery through the launcher's **Check for updates / Update All** controls after installing v1.4.2 or newer.
+- Automatically mounts the Bicycle when you enter an eligible area and have the Bicycle in your inventory.
+- Remembers deliberate dismounting until you enter a new area or mount manually; follows native restrictions and waits for player control.
+- Separate normal and cycling audio profiles: area/bicycle/both music, independent volumes and filters, plus cycling-specific area/SFX overrides. These customise existing music playback; custom-song importing is not included.
+- Six independent bicycle paint regions: **WHEEL, STRIPE, CENTRE, EDGE, DETAILS and HANDLEBARS**.
+- An animated preview of your active trainer and bicycle, on the original sprite grid.
+- **Original / Custom** per part, an RGB/hex colour editor, and a confirmed **Reset Colours** action.
+- English UK / English US spelling.
+- Native update discovery through this repository's releases.
 
-## Platform support
+Supports **Red, Blue, Yellow, Gold, Silver and Crystal**. Requires Gen1ReComp++ **v0.2.59 or newer** with mod API 2 support. There is no upper version limit, but that is not a guarantee against future breaking engine changes.
 
-Bicycle Plus is written in portable Lua and is intended to work on **any platform supported by Gen1ReComp++** that provides the required mod API and normal mod-loading system.
+The mod uses portable Lua and is intended for any supported platform exposing the normal mod system. Not every physical device has been tested. No ROMs, game executables or replacement trainer artwork are included.
 
-It does not contain platform-specific executables, libraries, file paths or keyboard-only controls. Not every device and operating system has been tested. In-app downloading also requires the host app's network/download support and access to GitHub; the ZIP remains available for manual installation.
+## Bicycle colours
 
-## Requirements and future engine versions
+Open **OPTION/OPTIONS → BICYCLE + → BIKE COLOUR**.
 
-- **Gen1ReComp++ v0.2.59 or newer**, with **mod API 2** support.
-- A legally obtained supported Pokémon ROM imported through Gen1ReComp++.
-- Trainer Skins is optional.
+All six parts and Reset Colours are visible together. **Up/Down** chooses a row. **Left/Right** switches between **Original** and the remembered **Custom** colour. **A** confirms Original or opens the Custom editor. Clicking/tapping the type column switches it; clicking/tapping the part label activates it.
 
-The engine declaration is `>=0.2.59`, with **no upper version limit**. An engine-number bump no longer requires a new Bicycle Plus release simply to remove the old maximum. The minimum engine version, required API, six-game targeting and permission checks are retained.
+Original preserves the current trainer/bicycle artwork. Switching to Original does not discard the last custom colour. Reset Colours restores all six parts to Original after confirmation; it does not reset your trainer, language, audio or automatic-cycling options.
 
-**Allowing a version is not the same as testing it.** Future changes to rendering, audio, menus, movement or the mod API may still need a code update. The v1.6.0 checks are headless colour/menu/render/updater checks, not full gameplay certification on every engine or device. See [VERIFICATION.md](VERIFICATION.md).
+### One colour chart
 
-This repository contains **no ROMs, extracted ROM data or replacement Pokémon game assets**.
+The editor has a rainbow **hue/saturation** chart and a separate **brightness** slider. It accepts exact R, G and B values from **0 to 255** or a six-digit **RRGGBB hex code**, with an optional `#` when pasted. New values are stored as exact 24-bit RGB, not rounded to the GBC's RGB555 steps. Existing saved colours retain their old RGB values.
 
-## First installation
+**Controller:** D-pad moves within the selected control. **Select** cycles through chart, brightness, R, G, B, hex, Apply and Cancel. **A** opens a field's on-screen keypad or applies the colour. **B** cancels the editor. Inside a field, the keypad has OK and BACK; confirming a field changes the draft, not the saved part, until you apply the whole colour.
 
-1. Download **`bicycle_plus-1.6.0.zip`** from the [release](https://github.com/moocd123/gen1recomp-bicycle-plus/releases/tag/v1.6.0) and **leave it zipped**.
-2. Open the launcher and go to **MODS → Import mod .zip**.
-3. Import the ZIP and enable **Bicycle Plus** for each edition you use.
-4. Launch the game and open **OPTION/OPTIONS → BICYCLE +**.
+**Mouse/touch:** Select/drag the chart and slider, or select a numeric field/button directly. Native virtual D-pad/buttons retain first refusal where they cover the screen. The footer leaves its centre clear of Apply/Cancel so those actions are away from the usual Select/Start overlay.
 
-Use the attached mod ZIP, **not GitHub's automatic Source code ZIP**. `SHA256SUMS.txt` is an optional download-integrity check, not another mod.
+**Keyboard:** Tab cycles focus. Enter edits the selected field or applies; Escape cancels. While editing a field, type digits/hex, use Backspace/Delete, Enter to accept, Escape to cancel, or Ctrl/Cmd+V to paste where clipboard access exists. Engine hotkeys are suppressed while a numeric field owns keyboard input; controller buttons still drive its keypad.
 
-## Updating
+The sprite preview changes while you browse. **Apply saves the draft; Cancel leaves the previous saved colour untouched.** The Original/Custom switch itself immediately changes that part's saved type/colour, separately from the editor's draft.
 
-**Already on v1.4.2 or v1.5.0? Use the launcher's MODS → Check for updates / Update All.** The installed mod already knows this GitHub repository; you do not need to delete it or import a ZIP again to obtain v1.6.0. Keep the app online and let the update complete, then relaunch the game as directed by the launcher.
+### Recognised colours
 
-For **v1.4.0 or v1.4.1**, one manual update is still necessary because those packages lack the GitHub field. Return to the launcher, delete only the old Bicycle Plus mod entry, import the current installable ZIP, and re-enable the editions you use. Do not delete saves, preferences, or app data. Fully close/reopen after a manual replacement.
+Descriptions below the hex code preserve the palette-reference work without forcing you through preset pages. An exact match may display **TRAINER SKINS GREEN**, **GBC BOOT**, **GBC GAME**, or a recorded LCD-look reference. Multiple names for one value rotate. Other RGB555 values display **GBC RGB555 COLOUR**; otherwise the description is **CUSTOM RGB**.
 
-The mod ID, repository, settings keys and original-colour aliases remain the same. Subsequent published releases with a higher version and an installable `bicycle_plus-<version>.zip` can be discovered by **Update All**. Network access and the host app's updater support are required. It is a user-triggered updater, not a background service.
+All ten named Trainer Skins v0.2.0 accents can now be matched exactly, including the six that previously needed hardware rounding. True Colour is an artwork mode, not one additional paint swatch; not every colour from every replacement sprite has a source label. DMG, Pocket and Light references are LCD-look approximations rather than calibrated physical-screen measurements.
 
-## Controls
+The six regions describe visible pixel groups. Shared outlines are inherently ambiguous in this art. The Gen 1 and Gen 2-style mappings are selected automatically; this editor does not swap the bicycle style or assert official anatomical labels. See [the region notes](https://github.com/moocd123/gen1recomp-bicycle-plus/blob/v1.6.0/docs/BICYCLE_REGIONS.md).
 
-### Bicycle colour editor
+## Audio and automatic cycling
 
-Open **BIKE COLOUR**. Up/Down selects WHEEL, STRIPE, CENTRE, EDGE, DETAILS or HANDLEBARS. The list scrolls without reducing the animated preview. Left/Right cycles the quick colours; A opens the full picker.
+The **AUDIO** page sets normal area/SFX volume and filtering. **AUDIO → CYCLING** sets **BICYCLE / AREA / BOTH**, bicycle volume/filter, and riding-only area/SFX overrides. **SAME** follows your normal setting. Dismounting restores normal audio. Choosing Bicycle gives original-style music switching without silencing the walking area's track.
 
-The picker starts with **Original**, then sections in hardware release order: **DMG → POCKET → LIGHT → GBC**, followed by **TRAINER**, **ALL PRESETS** and **FULL GBC GRID**. Each section is sorted by the displayed **RRGGBB hex code**, not by the packed RGB555 word. Exact matches are merged into one preset and assigned to one section. All Presets is a view of the same catalogue, not a second set of stored choices.
+The audio and automatic-mount modules have not changed for v1.7.0. Previous compatibility work for Trainer Skins, Running Shoes, Auto Field Moves, HM Field Unlock and Wilds of Kanto is retained; not every companion version/combination has been freshly retested.
 
-Choose a section with Up/Down and A, then browse its grid with the D-pad. **A** applies the previewed colour; **B** goes back; **Start** cancels. **Select** opens the full RGB555 grid, where Select toggles blue-channel focus. All 32,768 GBC colours remain available; the compact sections are preset references. Full labels include TRAINER RED, TRAINER GREEN and TRAINER BLUE, along with the other v0.2.0 accents.
+## Verification and development
 
-**RESET COLOURS** sits beneath the six controls. It asks NO/YES (default NO) and changes only those six bicycle colours to Original. It does not reset your trainer, audio, automatic cycling or spelling preference.
+[VERIFICATION.md](VERIFICATION.md) describes the automated checks and limitations. The workflow tests the actual source before packaging, checks the runtime hashes and download bytes, and publishes an installable ZIP. Software-boundary tests are not a physical-device gameplay claim. [CHANGELOG.md](CHANGELOG.md) records public releases; v1.4.0 was the first.
 
-The sprite stays on its original 16×16 pixel grid. Gen 1/Gen 2-shaped mappings are selected from the active artwork automatically; the ART readout is not a bike-style replacement switch. The corrected regions may change the appearance of an existing EDGE/DETAILS selection; saved colour values themselves are retained and new handlebars start Original.
-
-DMG/Pocket/Light display tints are documented RGB555 approximations, not exact calibrated LCD measurements. Trainer values between hardware steps are snapped to the nearest permitted colour. Original retains the active artwork rather than forcing it to one palette swatch. See [hardware colours](docs/HARDWARE_COLOURS.md) and [exact pixel regions](docs/BICYCLE_REGIONS.md).
-
-## Automatic cycling
-
-If you own the Bicycle, entering an area where cycling is permitted gives the mod one automatic-mount opportunity. It waits until player control is available and follows the game's existing cycling restrictions.
-
-If you deliberately dismount, Bicycle Plus remembers that choice for the current area. It will not automatically remount you there unless you mount manually or enter another eligible area.
-
-## Audio
-
-The normal **AUDIO** menu contains your normal area/SFX controls. **AUDIO → CYCLING** contains the riding profile.
-
-`ON BIKE` can be **BICYCLE** (bicycle music while riding, normal area music after dismounting), **AREA** (area music while riding) or **BOTH** (area and bicycle music together).
-
-Cycling-only area/SFX settings can be set to **SAME** to inherit the normal setting, or overridden independently. This allows quieter filtered area music underneath louder unfiltered bicycle music while cycling, with normal audio restored after dismounting.
-
-Area and bicycle music have independent volume and filter controls, and cycling SFX can use separate volume/filter settings.
-
-## Compatibility and release history
-
-Version 1.6.0 changes colour-region mappings and the colour UI. The audio, audio-menu and auto-mount modules are unchanged from v1.5.0. The part-mask changes are documented separately. Historical companion-mod checks were on **Gen1ReComp++ v0.2.59** and must not be read as a complete retest on every newer engine. Known compatibility work includes **Trainer Skins, Running Shoes, Auto Field Moves, HM Field Unlock and Wilds of Kanto**.
-
-See [COMPATIBILITY.md](COMPATIBILITY.md), [VERIFICATION.md](VERIFICATION.md) and [CHANGELOG.md](CHANGELOG.md). Compatibility with every third-party mod cannot be guaranteed.
-
-## Source and release packaging
-
-The production Lua files in the repository are the same files packaged into the release ZIP. The scoped v1.6.0 publishing workflow runs the public headless suites against pinned v0.2.60 engine source, verifies the manifest and all nine runtime hashes, builds an explicit allowlist into the installable ZIP, and publishes it with a SHA-256 checksum. It does not overwrite existing releases and downloads the published asset to verify it. Packaging checks are not gameplay tests.
-
-## License
-
-Bicycle Plus source code is released under the **MIT License**. See [LICENSE](LICENSE).
-
-Gen1ReComp++ is a separate project. Pokémon and related names, characters and game content are the property of their respective owners. This is an unofficial fan-made mod and is not affiliated with or endorsed by Nintendo, Creatures Inc. or GAME FREAK.
-
-## Upstream
-
-- [Gen1ReComp++ / Gen1Recomp](https://github.com/bryanthaboi/gen1recomp)
+Source is under the [MIT License](LICENSE). Pokémon and associated game content belong to their respective owners. This is an unofficial fan-made mod, not affiliated with Nintendo, Creatures Inc. or GAME FREAK. [Gen1ReComp++ upstream](https://github.com/bryanthaboi/gen1recomp).

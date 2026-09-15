@@ -1,13 +1,25 @@
 # Changelog
 
-## 1.6.0 — Handlebars and organised colours
+## 1.7.0 — Original/Custom RGB editor
 
-- Add independent HANDLEBARS and a colour-only, default-NO confirmed reset.
-- Correct EDGE/DETAILS ownership, protect shared pedal/shoe boundaries and report the automatically selected Gen 1/Gen 2 artwork family.
-- Organise hex-sorted unique presets into DMG, Pocket, Light, GBC and Trainer sections, with an All Presets view and the complete RGB555 grid.
-- Replace SKIN abbreviations with full TRAINER colour names and verify all ten accents against the supplied v0.2.0 code.
-- Retain existing saved values, Original, the updater source and all audio/automatic-mounting code.
-- Add actual-source pixel checks and native menu/reset/section tests; no new physical-device gameplay claim.
+- Replace system/preset navigation with one hue/saturation chart and brightness slider.
+- Exact 0–255 RGB and six-digit hex fields with controller keypad, keyboard/paste and mouse/touch input.
+- Original/Custom per part, remembered custom values and all six controls plus reset on one screen.
+- Solid selection arrow/highlight, compact labels, no redundant title/artwork/page counter.
+- Exact matching palette descriptions below the hex code; unknown values are not given historical names.
+- Preserve all saved RGB555/alias values, audio, automatic cycling, bicycle masks and update metadata.
+- Keep previews staged until Apply; add input/layout/persistence/pixel regression checks.
+
+
+## v1.6.0 — Grouped palettes and handlebars
+
+- System sections in DMG, Pocket, Light, Color order, followed by Trainer references and the full GBC grid.
+- Presets and quick colours sorted by displayed RRGGBB hex, not the packed RGB555 word.
+- Unique shared swatches across preset sections; full TRAINER colour labels on their own line.
+- Separate HANDLEBARS control, with native Gen 1/Gen 2-style source mappings and a forward-facing full-grid preview.
+- Shared side hand outlines and occluded lower boundaries protected; Dawn/Hilda clothing rows preserved.
+- RESET COLOURS below the six controls, with Cancel-first confirmation and no unrelated-setting changes.
+- Existing paint IDs, Original, audio, automatic cycling and the in-app update source retained.
 
 ## 1.5.0 — Hardware-limited colour picker
 
