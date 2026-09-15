@@ -1,15 +1,15 @@
-# Bicycle Plus v1.7.0 compatibility
+# Bicycle Plus v1.8.0 compatibility
 
-The mod retains Red, Blue, Yellow, Gold, Silver and Crystal targeting, mod API 2 and the `>=0.2.59` engine declaration. No upper engine limit is imposed; future breaking changes may still require a fix.
+The mod keeps the same six game targets, API 2 requirement, `>=0.2.59` declaration and GitHub update source. An open version range is not a promise against future breaking engine changes.
 
-`audio.lua`, `audio_menu.lua`, `automount.lua`, `bike_parts.lua`, `colours.lua` and `hardware_colours.lua` are byte-for-byte unchanged from the published v1.6.0. The new editor passes validated RGB values into the same renderer. It does not replace trainer artwork, change movement speed or alter audio profiles.
+The colour editor/renderer, masks and automatic-mount controller are unchanged from v1.7.0. The audio-menu and overlay code now support the selected track. Existing area/bicycle/SFX settings and profile keys remain unchanged. The default song selection is Original, retaining the existing sound unless a different song is selected.
 
-The six visible regions remain conservative Gen 1 / Gen 2-style pixel mappings chosen from the active artwork. Shared outlines are not official anatomical labels. Trainer Skins 0.1.0/0.2.0 palette-lifecycle handling is retained, as are safeguards for Wilds of Kanto and unrelated renderer chains. Unknown artwork can require a separate mapping review.
+Soundtrack donors are restricted to the six supported editions and engine-validated imported datasets. Current-game modded music records are usable where supported by the existing audio registry. Mods on a different donor edition are not executed merely to read its soundtrack.
 
-Existing aliases and RGB555 IDs retain their old colour values. New `rgb:RRGGBB` values are exact 24-bit colours. Reset restores the six main colour keys to Original; remembered custom values, trainer/rival selections, audio, language and automatic cycling are not erased.
+File import supports the engine desktop/native-mobile paths and an explicit controller-operated inbox fallback on builds lacking dialogs. This does not claim that every OS/console build has a native document picker. The personal library is installation-scoped, not a Pokémon playthrough or mod-code folder.
 
-Pointer and keyboard input use the native hooks. Virtual controls take priority before the picker. Pointer mapping supports the standard game viewport/letterbox; third-party output transforms can require additional integration. A compact Lua-drawn alphabet and solid markers avoid reliance on missing menu glyphs.
+Preview, rename/remove and changes to the chosen song are user initiated. File errors attempt the original bicycle theme, and normal scene/battle audio remains responsible for non-cycling moments. Resume keeps state only within the running session.
 
-Automated checks use engine modules with software graphics/input boundaries. Actual sprite PNGs can be used in the renderer test without including them in the release. These checks do not certify every companion feature, every physical device or complete gameplay on v0.2.60. See [VERIFICATION.md](VERIFICATION.md).
+New headless tests use pinned engine modules with specified software boundaries. Real LÖVE codec checks use generated test tones and a null audio driver in CI; they are not a physical loudspeaker test. Local ROM-based synthesis checks used the six user-supplied ROMs. No new blanket guarantee is made for every feature of every other mod or every hardware platform. See [VERIFICATION.md](VERIFICATION.md).
 
-The [v1.6.0 compatibility record](https://github.com/moocd123/gen1recomp-bicycle-plus/blob/v1.6.0/COMPATIBILITY.md) remains available as historical evidence; it is not a new full-stack retest for this release.
+The [v1.7.0 compatibility record](https://github.com/moocd123/gen1recomp-bicycle-plus/blob/v1.7.0/COMPATIBILITY.md) retains earlier colour/input details.

@@ -1,0 +1,119 @@
+name: Validate and publish Bicycle Plus v1.8.0
+on:
+  push:
+    branches: [main, music-v1.8.0]
+    paths:
+      - manifest.json
+      - RELEASE_NOTES_v1.8.0.md
+      - verification/v1.8.0/**
+      - .github/scripts/build_release.py
+      - .github/workflows/publish-v1.8.0.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: bicycle-plus-v1.8.0-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  test-and-publish:
+    if: github.repository == 'moocd123/gen1recomp-bicycle-plus'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out the exact source commit
+        env:
+          REPO: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git clone --no-checkout "https://github.com/${REPO}.git" source
+          git -C source checkout --detach "$SOURCE_SHA"
+      - name: Materialise reviewed runtime delta on development branch
+        working-directory: source
+        run: |
+          set -euo pipefail
+          if test -f verification/v1.8.0/runtime.patch; then
+            test '${{ github.ref }}' = 'refs/heads/music-v1.8.0'
+            git apply --check verification/v1.8.0/runtime.patch
+            git apply verification/v1.8.0/runtime.patch
+          fi
+      - name: Obtain pinned engine, test tools and generated audio fixtures
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends lua5.3 love ffmpeg
+          git clone --depth 1 --filter=blob:none --sparse --branch v0.2.60 https://github.com/bryanthaboi/gen1recomp.git engine
+          test "$(git -C engine rev-parse HEAD)" = '4dadfd55a88e796c15fa7549b7c56e60e7c9b6d5'
+          git -C engine sparse-checkout set src data
+          mkdir tones
+          ffmpeg -v error -f lavfi -i sine=frequency=440:duration=1 -c:a pcm_s16le tones/tone.wav
+          ffmpeg -v error -i tones/tone.wav -c:a libmp3lame tones/tone.mp3
+          ffmpeg -v error -i tones/tone.wav -c:a libvorbis tones/tone.ogg
+      - name: Test library, platform adapters, native audio, menus, sandbox and updater
+        working-directory: source
+        run: |
+          set -euo pipefail
+          for suite in library importer native_picker audio menu sandbox updater; do
+            lua5.3 "verification/v1.8.0/check_${suite}.lua" ../engine
+          done
+      - name: Test real LOVE codecs and storage with null audio driver
+        working-directory: source
+        env:
+          ALSOFT_DRIVERS: 'null'
+        run: |
+          set -euo pipefail
+          love verification/v1.8.0/codec "$PWD" "$PWD/../engine" "$PWD/../tones"
+      - name: Build reviewed source-only release
+        working-directory: source
+        run: python3 .github/scripts/build_release.py
+      - name: Commit materialised source only after tests pass
+        if: github.ref == 'refs/heads/music-v1.8.0'
+        working-directory: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if test -f verification/v1.8.0/runtime.patch; then
+            test "$(git ls-remote origin refs/heads/music-v1.8.0 | cut -f1)" = "$SOURCE_SHA"
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add main.lua audio.lua audio_menu.lua
+            git rm verification/v1.8.0/runtime.patch
+            git commit -m 'Materialise tested v1.8.0 music source; retain user-tested colour modules'
+            gh auth setup-git
+            git push origin HEAD:refs/heads/music-v1.8.0
+          fi
+          git rev-parse HEAD
+      - name: Publish without overwriting any release
+        if: github.ref == 'refs/heads/main'
+        working-directory: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if gh release view v1.8.0 >/dev/null 2>&1; then
+            echo 'v1.8.0 already exists; no existing release was changed.'
+          else
+            gh release create v1.8.0 dist/bicycle_plus-1.8.0.zip dist/SHA256SUMS.txt \
+              --target "$SOURCE_SHA" --title 'Bicycle Plus v1.8.0 - Custom cycling music' \
+              --notes-file RELEASE_NOTES_v1.8.0.md --latest
+          fi
+          gh release view v1.8.0 --json url,tagName,assets
+      - name: Verify published download bytes
+        if: github.ref == 'refs/heads/main'
+        working-directory: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          mkdir downloaded
+          gh release download v1.8.0 --pattern 'bicycle_plus-1.8.0.zip' --pattern SHA256SUMS.txt --dir downloaded
+          cmp dist/bicycle_plus-1.8.0.zip downloaded/bicycle_plus-1.8.0.zip
+          cmp dist/SHA256SUMS.txt downloaded/SHA256SUMS.txt
+          cd downloaded
+          sha256sum --check SHA256SUMS.txt

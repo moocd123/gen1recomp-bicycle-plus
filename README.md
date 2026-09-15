@@ -2,7 +2,7 @@
 
 Automatic cycling, independent cycling audio settings and bicycle colour customisation for Gen1ReComp++.
 
-**Current release: v1.7.0 — Original/Custom colour editor.**
+**Current release: v1.8.0 — Custom cycling songs.**
 
 [Download and release notes](https://github.com/moocd123/gen1recomp-bicycle-plus/releases/latest) · [Report an issue](https://github.com/moocd123/gen1recomp-bicycle-plus/issues)
 
@@ -10,15 +10,27 @@ Automatic cycling, independent cycling audio settings and bicycle colour customi
 
 Already using v1.4.2 or later? In the launcher, choose **MODS → Check for updates → Update All**. Relaunch the game after updating. The mod ID remains `bicycle_plus` and its update source remains this repository.
 
-New users: download **bicycle_plus-1.7.0.zip** from the release assets, leave it zipped, import it in **MODS**, then enable Bicycle Plus for the editions you play. Do not import GitHub's automatically generated Source code ZIP.
+New users: download **bicycle_plus-1.8.0.zip** from the release assets, leave it zipped, import it in **MODS**, then enable Bicycle Plus for the editions you play. Do not import GitHub's automatically generated Source code ZIP.
 
 Users on v1.4.0/v1.4.1 need a one-time manual update because those versions lack the GitHub update source. Delete only the old Bicycle Plus entry in MODS, import the new package and enable it. Do not delete saves or app data.
+
+## Custom cycling songs
+
+Open **OPTION/OPTIONS → BICYCLE + → AUDIO → BIKE SONG**. Choose the original bicycle theme, the current game's soundtrack, another imported Red/Blue/Yellow/Gold/Silver/Crystal soundtrack, or your own **MP3 / Ogg Vorbis / WAV** file. No songs or ROMs are supplied by the mod.
+
+Use **Up/Down** to browse, **Left/Right** to page, **Select** to preview and **A → USE FOR CYCLING** to select. **B** returns. Personal audio can be renamed or removed after confirmation. **ON MOUNT** offers **RESTART / RESUME** within the current session.
+
+The selected song still uses **BIKE VOL / BIKE FILTER** and **BICYCLE / AREA / BOTH**. Normal music returns when you dismount. A preview does not save a song selection.
+
+**IMPORT AUDIO FILE** uses the host's available picker: desktop dialogs on Windows/macOS/Linux, or the engine's native document bridge on supported mobile builds. **AUDIO INBOX** provides a controller/mouse/touch file selector on builds without a usable dialog: copy files into `mods/bicycle_plus/baseroms/audio_inbox/` in the app's game-data directory first. Native dialog availability depends on the platform/build.
+
+Imported files remain local and live outside the replaceable code folder, so ordinary mod updates preserve the library. Limits are **64 MiB per file and 128 files**. See [CUSTOM_MUSIC.md](docs/CUSTOM_MUSIC.md) for platform routes, controls, storage and limits.
 
 ## Features
 
 - Automatically mounts the Bicycle when you enter an eligible area and have the Bicycle in your inventory.
 - Remembers deliberate dismounting until you enter a new area or mount manually; follows native restrictions and waits for player control.
-- Separate normal and cycling audio profiles: area/bicycle/both music, independent volumes and filters, plus cycling-specific area/SFX overrides. These customise existing music playback; custom-song importing is not included.
+- Separate normal and cycling audio profiles: area/bicycle/both music, independent volumes and filters, plus cycling-specific area/SFX overrides. The bicycle layer can use the original theme, another imported-game track or a personal audio file.
 - Six independent bicycle paint regions: **WHEEL, STRIPE, CENTRE, EDGE, DETAILS and HANDLEBARS**.
 - An animated preview of your active trainer and bicycle, on the original sprite grid.
 - **Original / Custom** per part, an RGB/hex colour editor, and a confirmed **Reset Colours** action.
@@ -61,7 +73,7 @@ The six regions describe visible pixel groups. Shared outlines are inherently am
 
 The **AUDIO** page sets normal area/SFX volume and filtering. **AUDIO → CYCLING** sets **BICYCLE / AREA / BOTH**, bicycle volume/filter, and riding-only area/SFX overrides. **SAME** follows your normal setting. Dismounting restores normal audio. Choosing Bicycle gives original-style music switching without silencing the walking area's track.
 
-The audio and automatic-mount modules have not changed for v1.7.0. Previous compatibility work for Trainer Skins, Running Shoes, Auto Field Moves, HM Field Unlock and Wilds of Kanto is retained; not every companion version/combination has been freshly retested.
+The automatic-mount controller and all colour-editor/renderer modules remain unchanged in v1.8.0. The audio layer now supports song selection. Previous compatibility work for Trainer Skins, Running Shoes, Auto Field Moves, HM Field Unlock and Wilds of Kanto is retained; not every companion version/combination has been freshly retested.
 
 ## Verification and development
 

@@ -1,0 +1,7 @@
+Local run with supplied v0.2.59 engine Lua modules (texlua/Lua 5.3):
+32 library checks; 88 import-adapter checks; 22 actual-engine picker adapter checks;
+1,050 audio lifecycle checks; 10,668 menu/layout checks; 8 Sandbox checks; native updater test passed.
+OS, filesystem, Source and graphics boundaries are simulated as described in VERIFICATION.md.
+Optional actual-ROM/native ChipSynth check: initial PCM constructed for all 425 registered songs
+(Red45, Blue45, Yellow49, Gold92, Silver92, Crystal102). PCM sink simulated; not full tracks or gameplay.
+See Actions for the v0.2.60 publication tests and real LÖVE codec test results.

@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.8.0 — Custom cycling songs
+
+- Choose Original, the current game soundtrack, another imported supported game, or a personal audio file.
+- Import MP3, Ogg Vorbis and WAV through desktop/native mobile pickers; add a controller-operated audio-inbox fallback for builds without a dialog.
+- Keep the personal library in installation-scoped mod cache, outside the replaceable mod code folder.
+- Add preview, rename/remove-library-copy, duplicate detection, size/decoder checks, and Restart/Resume on mounting.
+- Retain the independent bicycle volume/filter and Area/Bicycle/Both mixes; restore normal audio after dismounting or battle.
+- Validate cross-game cache access without switching the running edition; no ROMs or soundtracks are distributed.
+- Keep the full colour editor, bicycle masks, automatic-mount controller and update source unchanged.
+
+
 ## 1.7.0 — Original/Custom RGB editor
 
 - Replace system/preset navigation with one hue/saturation chart and brightness slider.
