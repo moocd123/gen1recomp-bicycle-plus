@@ -5,6 +5,8 @@ return function(mod)
       "@bicycle_plus/" .. name .. ".lua"))()
   end
 
+  local SongCatalog = module("bike_songs")
+  local songMenu
   local Hardware = module("colour_values").extend(module("hardware_colours"))
   local colourChoices = Hardware.quickChoices
   local colourKeys = {bike_colour=true, bike_stripes_colour=true,
@@ -18,7 +20,7 @@ return function(mod)
   local ridingOverrides = {
     riding_area_volume=7, riding_area_filter=3, riding_sfx_volume=7, riding_sfx_filter=3,
   }
-  local defaults = {auto_mount=true, bike_volume=7, bike_filter=0,
+  local defaults = {bike_song="original",bike_song_restart="restart",auto_mount=true, bike_volume=7, bike_filter=0,
     sfx_filter=0, bike_colour="original", bike_stripes_colour="original",
     bike_centres_colour="original", bike_tyres_colour="original", bike_frame_colour="original", bike_handlebars_colour="original",
     spelling="uk", riding_music="both",
@@ -29,6 +31,8 @@ return function(mod)
   end
   local function getSetting(key)
     local v = mod.options:get(key)
+    if key == "bike_song" then return SongCatalog.canonical(v) or "original" end
+    if key == "bike_song_restart" then return v=="resume" and "resume" or "restart" end
     if key == "auto_mount" then return v ~= false end
     if key == "bike_volume" then
       return math.max(0, math.min(7, math.floor(tonumber(v) or 7)))
@@ -63,6 +67,7 @@ return function(mod)
   end
   local function defineOptions()
     mod.options:define({
+      {key="bike_song_restart",type="choice",label="BIKE SONG ON MOUNT",default="restart",choices={{"RESTART","restart"},{"RESUME","resume"}}},
       {key="auto_mount", type="toggle", label="AUTO BICYCLE", default=true},
       {key="bike_colour", type="choice", label="WHEEL " .. colourWord(),
         default="original", choices=choicesFor("bike_colour")},
@@ -99,7 +104,9 @@ return function(mod)
   defineOptions()
 
   local automount = module("automount").init(mod, getSetting)
-  local audio = module("audio").init(mod, getSetting)
+  local songs = SongCatalog.init(mod,getSetting)
+  local importer = module("song_import").init(mod,songs)
+  local audio = module("audio").init(mod, getSetting, songs)
   local colours = module("colours").init(mod, getSetting, module("bike_parts"), Hardware)
   local Runtime = require("src.mods.Runtime")
   local Font = require("src.render.Font")
@@ -111,6 +118,8 @@ return function(mod)
   local function setSetting(game, key, value)
     if Runtime.safeMode or defaults[key] == nil then return false end
     if migrateSettings then migrateSettings(game) end
+    if key == "bike_song" then value=SongCatalog.canonical(value); if not value then return false end end
+    if key == "bike_song_restart" and value~="restart" and value~="resume" then return false end
     if key == "auto_mount" then value = value == true end
     if key == "bike_volume" then
       value = math.max(0,math.min(7,math.floor(tonumber(value) or 7)))
@@ -200,9 +209,12 @@ return function(mod)
   end
   local audioMenu = module("audio_menu").init(mod, {
     getSetting=getSetting, setSetting=setSetting,
+    openSongs=function(game) if songMenu then return songMenu.open(game)end end,
   })
 
   local UI = module("colour_ui").init(mod)
+  songMenu = module("song_menu").init(mod, {ui=UI,library=songs,importer=importer,
+    audio=audio,getSetting=getSetting,setSetting=setSetting})
   local picker = module("colour_picker").init(mod, {
     hardware=Hardware, colours=colours, getSetting=getSetting, setSetting=setSetting,
     colourWord=colourWord, ui=UI,
@@ -234,7 +246,7 @@ return function(mod)
         value=function() return getSetting("auto_mount") and "ON" or "OFF" end,
         step=function(g) return setSetting(g,"auto_mount",not getSetting("auto_mount")) end},
       {id="bicycle_plus.audio",label="AUDIO",
-        value=function() return "VOLUMES/FILTERS" end,
+        value=function() return "SONGS/VOL/FILTER" end,
         activate=function(g) audioMenu.open(g) end},
       {id="bicycle_plus.colour",label=function() return "BIKE " .. colourWord() end,
         value=function() return "WHEEL:" .. Hardware.label(getSetting("bike_colour")) end,
@@ -304,6 +316,7 @@ return function(mod)
     automount.update(game)
     colours.update(game)
     audio.update(game,dt)
+    songMenu.update(dt)
   end
   mod.hooks:wrap("core.update",function(next,game,dt)
     local result=next(game,dt)
@@ -328,6 +341,10 @@ return function(mod)
     return next(...)
   end)
   -- Diagnostics and automated verification; no global variables or hotkeys.
+  mod.exports.songLibrary=songs
+  mod.exports.songImporter=importer
+  mod.exports.openSongs=songMenu.open
+  mod.exports.songAudio=audio
   mod.exports.update=update
   mod.exports.getSetting=getSetting
   mod.exports.hardwareColours=Hardware

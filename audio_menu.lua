@@ -80,8 +80,15 @@ function AudioMenu.init(mod, settings)
     }
   end
 
+  local function songRow()
+    return {id="bicycle_plus.song",label=Strings("BIKE SONG"),port=true,group=true,
+      value=function()return Strings("CHOOSE MUSIC")end,
+      activate=function(game)if active() and settings.openSongs then return settings.openSongs(game)end end}
+  end
+
   local function cyclingRows()
     return {
+      songRow(),
       { id = ids.ridingMusic, label = Strings("ON BIKE"), port = true,
         value = function()
           if not active() then return Strings("OFF") end
@@ -159,7 +166,7 @@ function AudioMenu.init(mod, settings)
     if not (active() and type(page) == "table" and type(page.rows) == "table")
         or page._bicyclePlusAudioMenu == controller then return page end
     page._bicyclePlusAudioMenu = controller
-    local extras = {filterRow("sfx_filter", "SFX FILTER", false), cyclingOpener(page, gen2)}
+    local extras = {filterRow("sfx_filter", "SFX FILTER", false), songRow(), cyclingOpener(page, gen2)}
     local rows, view = page.rows, page.view
     page.rows = augment(rows, extras)
     page.view = view == rows and page.rows or augment(view or rows, extras)
