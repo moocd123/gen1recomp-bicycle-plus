@@ -1,0 +1,146 @@
+name: Publish AUTOBIKE+ v1.9.3
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/staging/autobike-v1.9.3/**
+      - .github/workflows/publish-v1.9.3.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: autobike-release-v1.9.3
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'moocd123/gen1recomp-bicycle-plus' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out the exact authorised source commit
+        env:
+          REPO: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git clone --no-checkout "https://github.com/${REPO}.git" source
+          git -C source checkout --detach "$SOURCE_SHA"
+
+      - name: Restore reviewed source with transfer and per-file hash checks
+        working-directory: source
+        run: python3 .github/staging/autobike-v1.9.3/restore.py
+
+      - name: Obtain pinned engine and real audio test runtime
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends lua5.3 love xvfb xauth ffmpeg
+          git clone --depth 1 --filter=blob:none --sparse --branch v0.2.60 https://github.com/bryanthaboi/gen1recomp.git engine
+          test "$(git -C engine rev-parse HEAD)" = '4dadfd55a88e796c15fa7549b7c56e60e7c9b6d5'
+          git -C engine sparse-checkout set src data
+
+      - name: Test native sandbox completion, settings preservation and audio regressions
+        working-directory: source
+        run: |
+          set -euo pipefail
+          for file in ./*.lua verification/v1.9.3/*.lua; do luac5.3 -p "$file"; done
+          lua5.3 verification/v1.9.3/check_release.lua ../engine
+          lua5.3 verification/v1.9.3/check_options.lua ../engine
+          lua5.3 verification/v1.9.3/check_regions.lua ../engine
+          lua5.3 verification/v1.9.0/check_library_sandbox.lua ../engine
+          lua5.3 verification/v1.9.2/check_first_ride.lua ../engine
+          for edition in red blue yellow gold silver crystal; do
+            lua5.3 verification/v1.9.1/check_mode_audio.lua ../engine "$edition"
+            lua5.3 verification/v1.9.0/check_audio.lua ../engine "$edition"
+          done
+          lua5.3 - ../engine <<'LUA'
+          package.path=assert(arg[1])..'/?.lua;'..package.path
+          local Json=require('src.link.Json')
+          local Manifest=require('src.mods.Manifest')
+          local Update=require('src.mods.ModUpdate')
+          local f=assert(io.open('manifest.json'));local raw=Json.decode(f:read('*a'));f:close()
+          local m=Manifest.validate(raw,'bicycle_plus')
+          assert(m.id=='bicycle_plus' and m.name=='AUTOBIKE+' and m.version=='1.9.3')
+          assert(m.github=='moocd123/gen1recomp-bicycle-plus' and raw.game_version=='>=0.2.59')
+          local release=assert(Update.parseRelease({tag_name='v1.9.3',prerelease=false,assets={
+            {name='bicycle_plus-1.9.3.zip',browser_download_url='https://example.invalid/bicycle_plus-1.9.3.zip'}}},m.id))
+          assert(release.zip.name=='bicycle_plus-1.9.3.zip')
+          for _,v in ipairs({'1.4.2','1.8.0','1.9.0','1.9.1','1.9.2'}) do assert(Update.statusFor(v,{release})=='available') end
+          assert(Update.statusFor('1.9.3',{release})=='current')
+          print('PASS native manifest and updater metadata; not a live end-user update test.')
+          LUA
+
+      - name: Real audio decoding and streaming through simulated mobile returns
+        run: |
+          set -euo pipefail
+          mkdir tones
+          ffmpeg -v error -f lavfi -i 'sine=frequency=440:duration=1' -ar 44100 -ac 2 tones/test.wav
+          ffmpeg -v error -i tones/test.wav -c:a libvorbis tones/test.ogg
+          ffmpeg -v error -i tones/test.wav -c:a libmp3lame tones/test.mp3
+          ffmpeg -v error -i tones/test.wav -c:a flac tones/test.flac
+          export ALSOFT_DRIVERS=null
+          timeout 90s xvfb-run -a love "$PWD/source/verification/v1.9.3/love_test" "$PWD/source" "$PWD/engine" "$PWD/tones"
+          timeout 90s xvfb-run -a love "$PWD/source/verification/v1.9.0/love_test" "$PWD/source" "$PWD/engine" "$PWD/tones"
+
+      - name: Build verified source-only package
+        working-directory: source
+        run: python3 .github/scripts/build_import_fix_release.py
+
+      - name: Commit tested source without overwriting concurrent changes
+        working-directory: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$SOURCE_SHA"
+          python3 - <<'PY'
+          from pathlib import Path
+          import json, shutil, subprocess
+          stage=Path('.github/staging/autobike-v1.9.3')
+          files=json.loads((stage/'target-files.json').read_text())
+          subprocess.run(['git','add','--',*files],check=True)
+          shutil.rmtree(stage)
+          subprocess.run(['git','add','-u','--',str(stage)],check=True)
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Publish AUTOBIKE+ v1.9.3 mobile imports and combined handlebars' -m 'Handle current and older mobile file-picker deliveries with retry and recovery. Combine only existing Details/Handlebars pixel groups. Preserve progress-save paths and audio settings. Native sandbox and real decoder/streaming checks passed; physical-device testing remains.'
+          gh auth setup-git
+          git push origin HEAD:main
+          echo "RELEASE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Publish latest release with explicit device-testing notice
+        working-directory: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          if gh release view v1.9.3 >/dev/null 2>&1; then
+            echo 'v1.9.3 already exists; refusing to overwrite it.'
+            exit 1
+          fi
+          gh release create v1.9.3 dist/bicycle_plus-1.9.3.zip dist/SHA256SUMS.txt \
+            --target "$RELEASE_SHA" --title 'AUTOBIKE+ v1.9.3 - Mobile imports and handlebars' \
+            --notes-file RELEASE_NOTES_v1.9.3.md --latest
+          gh release view v1.9.3 --json url,tagName,assets
+
+      - name: Download released assets and verify exact bytes
+        working-directory: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          mkdir downloaded
+          gh release download v1.9.3 --pattern 'bicycle_plus-1.9.3.zip' --pattern 'SHA256SUMS.txt' --dir downloaded
+          cmp dist/bicycle_plus-1.9.3.zip downloaded/bicycle_plus-1.9.3.zip
+          cmp dist/SHA256SUMS.txt downloaded/SHA256SUMS.txt
+          cd downloaded
+          sha256sum --check SHA256SUMS.txt
