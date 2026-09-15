@@ -1,7 +1,7 @@
 {
   "id": "bicycle_plus",
   "name": "Bicycle Plus",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "api": 2,
   "entry": "main.lua",
   "profile": "content",
@@ -23,6 +23,6 @@
     "engine_internals"
   ],
   "affects_link": false,
-  "description": "Automatic cycling, independent cycling audio, and six-part bicycle colours with an Original/Custom RGB/hex picker, hardware colour references and reset.",
+  "description": "Automatic cycling, six-part RGB bicycle colours, separate cycling audio profiles and custom cycling songs from local files or imported Pokemon soundtracks.",
   "github": "moocd123/gen1recomp-bicycle-plus"
 }

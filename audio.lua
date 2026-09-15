@@ -9,7 +9,7 @@ local function level(value, fallback)
   return math.max(0, math.min(7, value))
 end
 
-function Audio.init(mod, settings)
+function Audio.init(mod, settings, songLibrary)
   local Music = require("src.core.Music")
   local Sound = require("src.core.Sound")
   local ChipAudio = require("src.core.ChipAudio")
@@ -19,7 +19,9 @@ function Audio.init(mod, settings)
   local ownedHooks, ownedEvents = Runtime.hooks, Runtime.events
   local api = {}
   local currentGame
-  local overlay
+  local overlay, audition
+  local choiceId, choiceGame, choiceRevision, choice, choiceError
+  local suspendLayer
   local selectedMapSong, activeMapSong
   local areaSuppressed = false
   local musicDepth, layerDepth = 0, 0
@@ -131,8 +133,12 @@ function Audio.init(mod, settings)
     return pcall(source[method], source, ...)
   end
 
-  local function makeOverlay(data, label)
+  local function makeOverlay(data, label, selected)
     local baseLabel = label
+    local def
+    if selected then
+      data, label, def = selected.data, selected.label, selected.def
+    else
     local _, world = bicycleState(currentGame)
     label = Runtime.call("music.select", function(song) return song end, label, {
       reason = "map", onBike = true, surfing = false,
@@ -140,12 +146,14 @@ function Audio.init(mod, settings)
       bicyclePlusLayer = true,
     })
     if not label or label == Music.current() then return nil end
-    local def = data and data.audio and data.audio.songs
+    def = data and data.audio and data.audio.songs
       and data.audio.songs[label]
+    end
     if not def then return nil, "no bicycle song in this game's audio registry" end
     if not (love and love.audio) then return nil, "audio device unavailable" end
     local result = { label = label, baseLabel = baseLabel,
-      data = data, def = def, started = false }
+      data = data, def = def, started = false, custom = selected ~= nil,
+      choiceKey = selected and selected.key or "original" }
     if def.chip or (def.address and def.bank) then
       if not (love.audio.newQueueableSource and love.sound) then
         return nil, "this device has no queueable audio support"
@@ -178,8 +186,8 @@ function Audio.init(mod, settings)
     return result
   end
 
-  local function fillBuffers()
-    local layer = overlay
+  local function fillBuffers(layer)
+    layer = layer or overlay
     if not (layer and layer.chip) then return true end
     local ok, free = withSource(layer.source, "getFreeBufferCount")
     if not ok or type(free) ~= "number" then return false, "audio queue unavailable" end
@@ -196,12 +204,66 @@ function Audio.init(mod, settings)
     return true
   end
 
-  local function pauseLayer()
-    if overlay then
-      withSource(overlay.source, "pause")
-      overlay.paused = true
+  local function pauseLayer(layer)
+    layer = layer or overlay
+    if layer then
+      withSource(layer.source, "pause")
+      layer.paused = true
     end
   end
+
+  suspendLayer = function()
+    if setting("bike_song_resume") == true and overlay then
+      pauseLayer()
+      setAreaSuppressed(false)
+    else api.stop() end
+  end
+
+  local function resolveChoice(game)
+    local id = setting("bike_song") or "original"
+    local revision = songLibrary and songLibrary.revision or 0
+    if id ~= choiceId or game ~= choiceGame or revision ~= choiceRevision then
+      choiceId, choiceGame, choiceRevision = id, game, revision
+      choice, choiceError = nil, nil
+      if songLibrary and id ~= "original" then
+        local ok, value, err = pcall(songLibrary.resolve, id, game)
+        choice, choiceError = ok and value or nil, ok and err or tostring(value)
+      end
+    end
+    return choice
+  end
+
+  function api.stopPreview()
+    if audition then release(audition.source); release(audition.loopSource); audition=nil end
+    if setAreaSuppressed then setAreaSuppressed(false) end
+  end
+
+  function api.previewSong(id, game)
+    if disposed or Runtime.safeMode then return nil, "Playback unavailable in safe mode" end
+    currentGame = game or currentGame or mod.game
+    api.stopPreview()
+    local selected, err
+    if id ~= "original" then
+      if not songLibrary then return nil, "Song library unavailable" end
+      local ok, value, message = pcall(songLibrary.resolve, id, currentGame)
+      selected, err = ok and value or nil, ok and message or tostring(value)
+      if not selected then return nil, err or "Song not available" end
+    else
+      local data = gameData(currentGame)
+      local label = bikeLabel(data)
+      local def = data and data.audio and data.audio.songs and data.audio.songs[label]
+      if not def then return nil, "Original bicycle theme not available" end
+      selected = {key="original", data=data, label=label, def=def}
+    end
+    layerDepth = layerDepth + 1
+    local ok, result, message = pcall(makeOverlay, selected.data, selected.label, selected)
+    layerDepth = layerDepth - 1
+    if not ok or not result then return nil, tostring(ok and message or result) end
+    audition = result
+    pauseLayer()
+    return true
+  end
+
 
   local function fanfareActive()
     local active = false
@@ -331,8 +393,8 @@ function Audio.init(mod, settings)
     end)
   end
 
-  local function applyOverlayVolume(game)
-    local layer = overlay
+  local function applyOverlayVolume(game, layer)
+    layer = layer or overlay
     if not layer then return end
     -- Exactly Music.lua's native gain, with the BICYCLE slider as its
     -- optionScale. The AREA slider never multiplies or mutes this bus.
@@ -359,6 +421,33 @@ function Audio.init(mod, settings)
       applyFilter(layer.source, filter)
       applyFilter(layer.loopSource, filter)
     end
+  end
+
+  local function pumpLayer(layer, game)
+    -- Short non-looping game cues restart when their final queued audio drains.
+    if layer.chip and layer.started and layer.engine:finished() then
+      local ok, free = withSource(layer.source, "getFreeBufferCount")
+      if ok and free == BUFFER_COUNT then
+        local made, engine = pcall(ChipSynth.newEngine, layer.data, layer.def, {allowLoops=true})
+        if not made then return nil, engine end
+        layer.engine, layer.started = engine, false
+      end
+    end
+    applyOverlayVolume(game, layer)
+    local filled, err = fillBuffers(layer)
+    if not filled then return nil, err end
+    local ok, playing = withSource(layer.source, "isPlaying")
+    if not ok then return nil, "Bicycle audio source unavailable" end
+    if not playing then
+      if layer.started and not layer.paused and layer.loopSource then
+        release(layer.source)
+        layer.source, layer.loopSource = layer.loopSource, nil
+      end
+      local called, success = withSource(layer.source, "play")
+      if not called or success == false then return nil, "Audio playback could not start" end
+    end
+    layer.started, layer.paused = true, false
+    return true
   end
 
   -- Native volume/filter setters keep ownership of cached Sources,
@@ -475,7 +564,7 @@ function Audio.init(mod, settings)
             -- inheriting the suppressed area's gain.
             mapCueActive = false
             syncProfiles(currentGame or (mod and mod.game))
-            api.stop()
+            suspendLayer()
           end
         elseif name == "update" and syncLayer then
           syncLayer(currentGame or (mod and mod.game), 0)
@@ -543,14 +632,14 @@ function Audio.init(mod, settings)
     else
       mapCueActive = false
       syncProfiles(currentGame or (mod and mod.game))
-      api.stop()
+      suspendLayer()
     end
   end)
 
   subscriptions[#subscriptions + 1] = mod.events:on("music.stopped", function()
     mapCueActive = false
     syncProfiles(currentGame or (mod and mod.game))
-    api.stop()
+    suspendLayer()
   end)
 
   subscriptions[#subscriptions + 1] = mod.events:on("sound.played", function(event)
@@ -558,12 +647,14 @@ function Audio.init(mod, settings)
     if event.kind == "sfx" and data and Sound.ducksMusic(data, event.name) then
       fanfares[event.name] = true
       pauseLayer()
+      if audition then pauseLayer(audition) end
     end
   end)
 
   subscriptions[#subscriptions + 1] = mod.events:on("save.loading", function()
     selectedMapSong, activeMapSong, mapCueActive, fanfares = nil, nil, false, {}
     syncProfiles(currentGame or (mod and mod.game))
+    api.stopPreview()
     api.stop()
   end)
 
@@ -593,22 +684,38 @@ function Audio.init(mod, settings)
     dt = tonumber(dt) or 0
     if dt == dt and dt > 0 then clock = clock + math.min(dt, 1) end
     syncProfiles(currentGame, cue)
+    if audition then
+      local top = currentGame and currentGame.stack and currentGame.stack:top()
+      if not (top and top.bicycleMusicPreview) then api.stopPreview()
+      elseif ChipAudio.isSuspended() or fanfareActive() then
+        pauseLayer(audition); return
+      else
+        local ok, err = pumpLayer(audition, currentGame)
+        if not ok then lastFailure=tostring(err);api.stopPreview()
+        else setAreaSuppressed(true);maskNativeFade();return end
+      end
+    end
     local riding, world, surfing = bicycleState(currentGame)
     local data = gameData(currentGame)
     local label = data and bikeLabel(data)
     if cue then riding, surfing = cue.riding, cue.surfing end
-    if ridingMusic() == "area" then api.stop(); return end
+    if ridingMusic() == "area" then suspendLayer(); return end
     if not riding or surfing or not world or not data
         or not mapCueActive
         or (not cue and Music.current() ~= selectedMapSong and Music.current() ~= activeMapSong)
-        or (cue and cue.song == label) or (not cue and Music.current() == label)
         or Music.oneShotPlaying() then
-      api.stop()
+      suspendLayer()
       return
     end
-    -- AREA OFF is independent; only BICYCLE OFF stops this sequencer.
+    local selected = resolveChoice(currentGame)
+    -- Keep the original label-merging behaviour only for the default theme.
+    -- An explicitly selected track retains its own volume/filter even when
+    -- the same song is currently playing on the independent AREA bus.
+    if not selected and ((cue and cue.song == label) or (not cue and Music.current() == label)) then
+      suspendLayer();return
+    end
     if level(setting("bike_volume"), 7) == 0 then
-      api.stop()
+      suspendLayer()
       setAreaSuppressed(ridingMusic() == "bicycle")
       return
     end
@@ -617,42 +724,44 @@ function Audio.init(mod, settings)
       pauseLayer()
       return
     end
-    if overlay and (overlay.data ~= data or overlay.baseLabel ~= label
-        or overlay.def ~= (data.audio.songs and data.audio.songs[overlay.label])
+    local key = selected and selected.key or "original"
+    local songData = selected and selected.data or data
+    local songDef = selected and selected.def
+    if overlay and (overlay.choiceKey ~= key or overlay.data ~= songData
+        or (not selected and (overlay.baseLabel ~= label
+          or overlay.def ~= (data.audio.songs and data.audio.songs[overlay.label])))
+        or (selected and overlay.def ~= songDef)
         or (overlay.chip and (overlay.rate ~= ChipSynth.SAMPLE_RATE
-          or overlay.stereo ~= ChipSynth.getStereo()))) then
-      api.stop()
-    end
+          or overlay.stereo ~= ChipSynth.getStereo()))) then api.stop() end
     if not overlay then
       if clock < retryAt then return end
       layerDepth = layerDepth + 1
-      local made, result, err = pcall(makeOverlay, data, label)
+      local made, result, err = pcall(makeOverlay, data, label, selected)
       layerDepth = layerDepth - 1
       if not made then err, result = result, nil end
+      if not result and selected then
+        -- A missing/unsupported user file must not cause permanent silence.
+        -- Keep the user's selected ID so reinstating the import restores it.
+        choiceError=tostring(err or "Selected song unavailable")
+        choice=nil;selected=nil
+        layerDepth=layerDepth+1
+        made,result,err=pcall(makeOverlay,data,label)
+        layerDepth=layerDepth-1
+        if not made then err,result=result,nil end
+      end
       if not result then
-        -- A downstream selection mod deliberately muted or merged the two
-        -- labels. Honour that decision without flagging it as an error.
-        if err then report(err) else retryAt = clock + 0.5 end
+        if err then report(err) else retryAt=clock+0.5 end
         return
       end
-      overlay = result
-      lastFailure = nil
+      overlay=result;lastFailure=nil
     end
-    applyOverlayVolume(currentGame)
-    local filled, err = fillBuffers()
-    if not filled then report(err); return end
-    local ok, playing = withSource(overlay.source, "isPlaying")
-    if not ok then report("bicycle audio source became unavailable"); return end
-    if not playing then
-      -- File-backed intros finish once. A paused intro is resumed instead.
-      if overlay.started and not overlay.paused and overlay.loopSource then
-        release(overlay.source)
-        overlay.source, overlay.loopSource = overlay.loopSource, nil
-      end
-      local started, playErr = withSource(overlay.source, "play")
-      if not started then report(playErr or "could not play bicycle audio"); return end
+    local ok, err=pumpLayer(overlay,currentGame)
+    if not ok then
+      if overlay and overlay.custom then
+        choiceError=tostring(err);choice=nil;api.stop();retryAt=0
+      else report(err) end
+      return
     end
-    overlay.started, overlay.paused = true, false
     setAreaSuppressed(ridingMusic() == "bicycle")
   end
 
@@ -672,6 +781,8 @@ function Audio.init(mod, settings)
     local game = currentGame or (mod and mod.game)
     local riding = bicycleState(game)
     return { mode = "independent", ridingMusic = ridingMusic(),
+      song = setting("bike_song") or "original", songError = choiceError,
+      previewActive = audition ~= nil, previewError = lastFailure,
       areaSuppressed = areaSuppressed, ridingProfile = ridingProfile,
       effectiveAreaVolume = profileValue("riding_area_volume", normalMusicLevel, 7),
       effectiveAreaFilter = profileValue("riding_area_filter", normalAreaFilter, 3),
@@ -699,6 +810,7 @@ function Audio.init(mod, settings)
     Music.setVolumeLevel(normalMusicLevel)
     Music.setFilterLevel(normalAreaFilter)
     Sound.setVolumeLevel(normalSfxLevel)
+    api.stopPreview()
     api.stop()
     for source, entry in pairs(soundSources) do restoreSfxFilter(source, entry) end
     soundSources = setmetatable({}, {__mode="k"})
@@ -714,6 +826,7 @@ function Audio.init(mod, settings)
     selectedMapSong, activeMapSong, mapCueActive, fanfares = nil, nil, false, {}
     -- Assets.register retains callbacks for the process lifetime. Cut the
     -- loader, settings closure and old buses out of those retained closures.
+    choice, choiceGame, songLibrary = nil, nil, nil
     mod, settings, ownedHooks, ownedEvents = nil, nil, nil, nil
   end
 
@@ -722,6 +835,8 @@ function Audio.init(mod, settings)
   -- into the next loaded game. They retain no reference to the game object.
   Assets.register({
     invalidate = function()
+      api.stopPreview()
+      choiceId, choiceGame, choiceRevision, choice = nil, nil, nil, nil
       api.stop()
       retryAt, warned = 0, {}
       if Runtime.hooks ~= ownedHooks or Runtime.events ~= ownedEvents then api.dispose() end

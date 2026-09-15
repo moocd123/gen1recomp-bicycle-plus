@@ -1,0 +1,13 @@
+EXTRACTED SOUNDTRACK red
+EXTRACTED SOUNDTRACK blue
+EXTRACTED SOUNDTRACK yellow
+EXTRACTED SOUNDTRACK gold
+EXTRACTED SOUNDTRACK silver
+EXTRACTED SOUNDTRACK crystal
+PASS red: 45 tracks instantiated and first 512 stereo frames rendered (44 audible starts).
+PASS blue: 45 tracks instantiated and first 512 stereo frames rendered (44 audible starts).
+PASS yellow: 49 tracks instantiated and first 512 stereo frames rendered (48 audible starts).
+PASS gold: 92 tracks instantiated and first 512 stereo frames rendered (91 audible starts).
+PASS silver: 92 tracks instantiated and first 512 stereo frames rendered (91 audible starts).
+PASS crystal: 102 tracks instantiated and first 512 stereo frames rendered (101 audible starts).
+PASS 425 real imported track starts; 36 current/selected edition pairings with 2048-frame exact PCM comparisons and active-bank rechecks. No hardware audio device used.

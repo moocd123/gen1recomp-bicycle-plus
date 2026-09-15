@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.8.0 — Custom cycling music
+
+- Local audio import, preview, rename and confirmed library-copy removal.
+- Current-game and other imported Pokémon soundtrack selection with isolated sound-program cache keys.
+- Desktop/mobile system-picking routes, scoped portable inbox browser, nested folders and chained file-drop import.
+- Durable library outside the installed mod directory, duplicate-content checks and alternating index snapshots.
+- Restart/resume in-session, native-scale bicycle volume/filter and missing-file fallback.
+- Native Audio/Cycling menu openers; preserve the colour/automatic-cycling code and update source.
+- Add platform adapter, library, menu, audio-state, updater and optional local-ROM synthesis tests.
+
 ## 1.7.0 — Original/Custom RGB editor
 
 - Replace system/preset navigation with one hue/saturation chart and brightness slider.

@@ -5,6 +5,10 @@ return function(mod)
       "@bicycle_plus/" .. name .. ".lua"))()
   end
 
+  local SongLibrary = module("song_library")
+  local songs = SongLibrary.init(mod)
+  local songMenu
+
   local Hardware = module("colour_values").extend(module("hardware_colours"))
   local colourChoices = Hardware.quickChoices
   local colourKeys = {bike_colour=true, bike_stripes_colour=true,
@@ -18,7 +22,7 @@ return function(mod)
   local ridingOverrides = {
     riding_area_volume=7, riding_area_filter=3, riding_sfx_volume=7, riding_sfx_filter=3,
   }
-  local defaults = {auto_mount=true, bike_volume=7, bike_filter=0,
+  local defaults = {bike_song="original", bike_song_resume=false, auto_mount=true, bike_volume=7, bike_filter=0,
     sfx_filter=0, bike_colour="original", bike_stripes_colour="original",
     bike_centres_colour="original", bike_tyres_colour="original", bike_frame_colour="original", bike_handlebars_colour="original",
     spelling="uk", riding_music="both",
@@ -30,6 +34,8 @@ return function(mod)
   local function getSetting(key)
     local v = mod.options:get(key)
     if key == "auto_mount" then return v ~= false end
+    if key == "bike_song" then return SongLibrary.valid(v) and v or "original" end
+    if key == "bike_song_resume" then return v == true end
     if key == "bike_volume" then
       return math.max(0, math.min(7, math.floor(tonumber(v) or 7)))
     end
@@ -62,7 +68,12 @@ return function(mod)
     return choices
   end
   local function defineOptions()
+    local songChoices={{"ORIGINAL", "original"}}
+    local chosen=getSetting("bike_song")
+    if chosen~="original" then songChoices[#songChoices+1]={songs.describe(chosen),chosen} end
     mod.options:define({
+      {key="bike_song",type="choice",label="BICYCLE SONG",default="original",choices=songChoices},
+      {key="bike_song_resume",type="toggle",label="RESUME BIKE SONG",default=false},
       {key="auto_mount", type="toggle", label="AUTO BICYCLE", default=true},
       {key="bike_colour", type="choice", label="WHEEL " .. colourWord(),
         default="original", choices=choicesFor("bike_colour")},
@@ -99,7 +110,7 @@ return function(mod)
   defineOptions()
 
   local automount = module("automount").init(mod, getSetting)
-  local audio = module("audio").init(mod, getSetting)
+  local audio = module("audio").init(mod, getSetting, songs)
   local colours = module("colours").init(mod, getSetting, module("bike_parts"), Hardware)
   local Runtime = require("src.mods.Runtime")
   local Font = require("src.render.Font")
@@ -112,6 +123,8 @@ return function(mod)
     if Runtime.safeMode or defaults[key] == nil then return false end
     if migrateSettings then migrateSettings(game) end
     if key == "auto_mount" then value = value == true end
+    if key == "bike_song_resume" then value = value == true end
+    if key == "bike_song" and not SongLibrary.valid(value) then return false end
     if key == "bike_volume" then
       value = math.max(0,math.min(7,math.floor(tonumber(value) or 7)))
     end
@@ -140,7 +153,7 @@ return function(mod)
     if game.mods.events then
       game.mods.events:emit("mod.options_changed", {mod=mod.id,key=key,value=value})
     end
-    if key == "spelling" or colourKeys[key] then defineOptions() end
+    if key == "spelling" or key == "bike_song" or colourKeys[key] then defineOptions() end
     return true
   end
 
@@ -200,9 +213,33 @@ return function(mod)
   end
   local audioMenu = module("audio_menu").init(mod, {
     getSetting=getSetting, setSetting=setSetting,
+    openSong=function(game)if songMenu then return songMenu.open(game)end end,
   })
 
   local UI = module("colour_ui").init(mod)
+  songMenu = module("music_menu").init(mod, {
+    ui=UI,library=songs,audio=audio,getSetting=getSetting,setSetting=setSetting,
+  })
+  -- Chained callback scoped to a visible music menu. Other dropped files
+  -- and other screens retain the engine/previous mod handler unchanged.
+  local previousDrop=love.filedropped
+  local dropState={active=true,menu=songMenu,game=mod.game,hooks=Runtime.hooks,events=Runtime.events}
+  local dropWrapper
+  dropWrapper=function(file,...)
+    if dropState.hooks~=Runtime.hooks or dropState.events~=Runtime.events then
+      dropState.active=false;dropState.game=nil;dropState.menu=nil
+    end
+    if dropState.active and dropState.menu.fileDropped(dropState.game,file) then return end
+    if previousDrop then return previousDrop(file,...) end
+  end
+  love.filedropped=dropWrapper
+  local function retireLibrary()
+    dropState.active=false;dropState.menu=nil;dropState.game=nil
+    songs.shutdown()
+    if love.filedropped==dropWrapper then love.filedropped=previousDrop end
+  end
+  require("src.render.Assets").register({release=retireLibrary})
+
   local picker = module("colour_picker").init(mod, {
     hardware=Hardware, colours=colours, getSetting=getSetting, setSetting=setSetting,
     colourWord=colourWord, ui=UI,
@@ -299,6 +336,11 @@ return function(mod)
 
   local function update(game,dt)
     currentGame=game
+    dropState.game=game
+    if songs.pending or songs.discardedPick then
+      local row,err=songs.poll()
+      if row or err then songs.lastImport={row=row,error=err} end
+    end
     migrateSettings(game)
     audioMenu.update(game)
     automount.update(game)
@@ -319,15 +361,22 @@ return function(mod)
   end,-100)
   mod.events:on("game.ready",function(ev)
     currentGame=ev.game
+    dropState.game=ev.game
     migrateSettings(currentGame)
     audioMenu.update(currentGame)
   end)
   mod.events:on("save.loading",function() audio.stop() end)
   mod.hooks:wrap("core.quit_to_launcher",function(next,...)
+    audio.stopPreview()
     audio.stop()
+    retireLibrary()
     return next(...)
   end)
   -- Diagnostics and automated verification; no global variables or hotkeys.
+  mod.exports.songLibrary=songs
+  mod.exports.songMenu=songMenu
+  mod.exports.openSongs=songMenu.open
+  mod.exports.audio=audio
   mod.exports.update=update
   mod.exports.getSetting=getSetting
   mod.exports.hardwareColours=Hardware

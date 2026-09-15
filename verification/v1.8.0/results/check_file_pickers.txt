@@ -1,0 +1,1 @@
+PASS 58 cross-platform file-picker/browser checks; actual desktop adapters, simulated OS/native-dialog/filesystem boundaries.

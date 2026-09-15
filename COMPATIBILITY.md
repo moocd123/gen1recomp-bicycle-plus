@@ -1,15 +1,13 @@
-# Bicycle Plus v1.7.0 compatibility
+# Bicycle Plus v1.8.0 compatibility
 
-The mod retains Red, Blue, Yellow, Gold, Silver and Crystal targeting, mod API 2 and the `>=0.2.59` engine declaration. No upper engine limit is imposed; future breaking changes may still require a fix.
+Requires Gen1ReComp++ v0.2.59 or newer, mod API 2. Red, Blue, Yellow, Gold, Silver and Crystal remain the six supported editions. New engine version numbers are not blocked, but future breaking changes are not guaranteed compatible.
 
-`audio.lua`, `audio_menu.lua`, `automount.lua`, `bike_parts.lua`, `colours.lua` and `hardware_colours.lua` are byte-for-byte unchanged from the published v1.6.0. The new editor passes validated RGB values into the same renderer. It does not replace trainer artwork, change movement speed or alter audio profiles.
+The colour renderer, part masks, colour editor/value/UI modules and automatic-mount module are unchanged from v1.7.0. Existing settings keys and the native GitHub update source remain. New song settings default to the original theme and restart-on-mount. Historical Trainer Skins and companion-mod checks are not a fresh exhaustive retest of every combination.
 
-The six visible regions remain conservative Gen 1 / Gen 2-style pixel mappings chosen from the active artwork. Shared outlines are not official anatomical labels. Trainer Skins 0.1.0/0.2.0 palette-lifecycle handling is retained, as are safeguards for Wilds of Kanto and unrelated renderer chains. Unknown artwork can require a separate mapping review.
+Custom music uses a separate source/sequencer, preserving normal music/SFX and existing volume/filter hooks. Imported other-game programs have isolated cache keys to avoid collisions with the active soundtrack. Current-game soundtrack enumeration uses the live audio registry; other-game enumeration uses the imported base cache, not mods active only in that other game.
 
-Existing aliases and RGB555 IDs retain their old colour values. New `rgb:RRGGBB` values are exact 24-bit colours. Reset restores the six main colour keys to Original; remembered custom values, trainer/rival selections, audio, language and automatic cycling are not erased.
+All-platform import is capability-based: native desktop pickers on Windows/macOS/Linux, advertised native required-import bridge where present, and an in-app music-inbox browser as fallback. Native dialogs are not invented on builds that do not expose them. Desktop drag/drop is limited to visible music screens and chains other handlers. The library is in LÖVE's save root, outside the mod-install directory. Platform storage-transfer/permission rules still apply.
 
-Pointer and keyboard input use the native hooks. Virtual controls take priority before the picker. Pointer mapping supports the standard game viewport/letterbox; third-party output transforms can require additional integration. A compact Lua-drawn alphabet and solid markers avoid reliance on missing menu glyphs.
+Supported file formats are subject to the actual decoder in each platform build. MP3/Ogg Vorbis/WAV/FLAC files must validate before use. No promise is made for AAC/M4A, DRM files or URL streaming. Imported recordings are not automatically loudness-normalised.
 
-Automated checks use engine modules with software graphics/input boundaries. Actual sprite PNGs can be used in the renderer test without including them in the release. These checks do not certify every companion feature, every physical device or complete gameplay on v0.2.60. See [VERIFICATION.md](VERIFICATION.md).
-
-The [v1.6.0 compatibility record](https://github.com/moocd123/gen1recomp-bicycle-plus/blob/v1.6.0/COMPATIBILITY.md) remains available as historical evidence; it is not a new full-stack retest for this release.
+See [CUSTOM_MUSIC.md](docs/CUSTOM_MUSIC.md) and [VERIFICATION.md](VERIFICATION.md) for capabilities, defaults, storage and actual testing limits.

@@ -1,23 +1,35 @@
-# Bicycle Plus v1.7.0 verification
+# Bicycle Plus v1.8.0 verification
 
-## Scope
+## What changed
 
-A colour-interface update based on the published v1.6.0. It adds an exact RGB value adapter and compact UI helper, replaces the picker, updates colour-menu persistence, and crops the published three-view preview to show a chosen facing. `audio.lua`, `audio_menu.lua`, `automount.lua`, `bike_parts.lua`, `colours.lua` and `hardware_colours.lua` are unchanged from published v1.6.0. The original renderer's palette, mask and world-paint paths remain intact.
+This build starts from published v1.7.0 (`ba08de57e2715cb28dae59b3b118cc004b4c62d5`). It adds `song_library.lua` and `music_menu.lua` and modifies `audio.lua`, `audio_menu.lua` and `main.lua`. Eight existing runtime files (the entire colour implementation and automatic mounting) remain byte-for-byte unchanged.
 
-## Automated checks
+## Executed local checks
 
-- All 32,768 old RGB555 values preserve their expansion. RGB555/HSV round trips, unrounded RGB values, hex validation, invalid channel rejection and exact known-colour references are checked.
-- The real Screens and StateStack modules construct the menus across six game contexts. Input, device and graphics boundaries are simulated. Checks cover all six Original/Custom controls, last-custom persistence, draft cancellation, reset isolation, keyboard/paste/keypad entry, pointer coordinate transforms, drag cancellation, UI text bounds/overlap and safe-mode write rejection.
-- The native SpriteRenderer is exercised using software ImageData/graphics. Every part can receive a non-RGB555 value; other pixels and alpha remain unchanged relative to the published masks. Front-facing handlebar preview, three-view preview, Original restoration and resolver cleanup are checked.
-- Native Manifest and ModUpdate code validates the retained GitHub source, minimum engine/API requirement, version ordering and preferred release asset. This test does not perform a real end-user network installation.
-- The builder checks an explicit runtime hash list and packages only reviewed source/documents. The workflow downloads the published ZIP and verifies its exact bytes/checksum.
+The tests in `verification/v1.8.0` run under Lua 5.3 / texlua against the Lua modules extracted from the supplied v0.2.59 Windows build. Key modules (FilePicker, Music, ChipSynth, Manifest and ModUpdate) were checked by Git blob hash against the v0.2.60 repository and are identical. This is not running a complete v0.2.60 executable.
 
-Local checks used modules extracted from the supplied v0.2.59 Windows executable and 26 true-colour/quantised cases from the uploaded Trainer Skins v0.2.0 archive, plus two procedural sprite cases. Publication checks use upstream v0.2.60 commit `4dadfd55a88e796c15fa7549b7c56e60e7c9b6d5`, and hash-checked native/Trainer Skins test fixtures prepared by the existing v1.6.0 fixture script. No test artwork is bundled in the release.
+- Library tests: bounded imports, byte deduplication, rename/remove, persistence, corrupt index fallback, missing files, safe-mode rejection, native pick markers and cross-game cache validation.
+- Cross-platform picker tests: actual engine FilePicker branches for Windows, macOS and Linux with dialog/process responses simulated; native mobile capability and completion contracts; no-shell fallbacks for NX/UWP/unknown builds; nested inbox browsing and path rejection.
+- Audio tests: actual Music and hook/event modules, with audio Sources and device boundaries simulated. All 64 area/bike level combinations, filters, modes, dismount, battle, fanfare, device-suspension state, restart/resume, preview, missing/failed file fallback and cleanup. Executed for all six edition contexts.
+- Menu tests: actual Screens/StateStack, with software graphics and selected services mocked. Choosing tracks, rename/remove confirmation, saved-setting isolation, inbox fallback, help and file-drop ownership. Executed for all six contexts.
+- Native Audio/OptionsMenu integration: both normal and cycling BIKE SONG openers, without duplicate rows, for all six editions.
+- Native manifest/updater metadata: retained ID/repository, game/API declarations, version ordering and exact preferred ZIP name. No actual end-user network update is claimed.
+- Optional ROM test: native ROM audio extraction and ChipSynth with the six separately supplied ROMs. 425 track starts rendered (512 stereo frames each), plus 36 current/selected game pairings with 2,048-frame exact PCM comparisons and active-game bank rechecks. The short silent starts are reported, not treated as proof of a fully audible complete song. No ROM bytes or generated audio are included in the ZIP or source-update archive.
 
-See [Actions](https://github.com/moocd123/gen1recomp-bicycle-plus/actions) for actual publication outcomes and logs. Test assertion counts are implementation details, not coverage guarantees.
+Recorded local results are in `verification/v1.8.0/results`. The publishing workflow is configured to repeat the non-ROM checks against pinned v0.2.60 source. Until that workflow actually runs, its success must not be assumed.
 
-## Limits
+## Packaging
 
-No new physical phone, OS clipboard/keyboard, hardware GPU, controller driver, network updater or full gameplay session was tested here. Software tests cannot prove that every device or companion mod combination behaves correctly. Real-device feedback remains necessary. The open engine range is a version declaration, not a promise that future breaking API changes will be compatible.
+The build script validates a source allowlist, runtime SHA-256 values, unchanged baseline Git hashes, manifest/update metadata and ZIP round-trip/CRC checks. `.modkit/pack.json` records per-file integrity; SHA256SUMS.txt covers the installable archive. Neither original audio files nor test ROMs are packaged.
 
-Colour descriptions are exact matches to recorded digital references. LCD-look labels are approximations; unmatched colours are not assigned a historical name. New custom paint supports 24-bit RGB; old hardware-limited selections are neither discarded nor silently reinterpreted.
+## Not established by these checks
+
+No physical Android/iOS/Desktop/console file dialog or full hardware gameplay session was run here. Operating-system picker permissions, audio-device codecs/drivers, actual user-file decoding, controllers/touch drivers and every companion-mod combination remain device-test items. Mocked decoding is not labelled a real MP3/FLAC decode test; generated PCM is not labelled a listening test. Future engine changes may require adaptation despite the open minimum-version declaration.
+
+## Pre-publication safety review
+
+The custom-music code has no progress-save writer, save-format migration, ROM patch or active-game switch. Song choices use the existing options-only writer. Imported tracks, alternating index files and foreign sound-program copies use `mod_data/bicycle_plus/music`; native picking uses only this mod's separate temporary destination and matching completion flags. Original user-selected files are read, not deleted.
+
+The added `check_safety.lua` guards every mocked filesystem write/delete/directory creation, with protected progress-save, global-options, original-audio, ROM/save/mod-staging and unrelated-mod sentinels. Import, rename, remove, malformed-index/path rejection and interrupted-index recovery passed without changing those sentinels. This is a software-boundary test, not a disk/power-loss or physical-device guarantee. The library/index and all six audio-context tests were repeated before publication.
+
+There is no identified direct progress-save corruption path in this review, but a mod crash, host bug, exhausted storage or interrupted host save cannot be ruled out. Importing a large file uses bounded memory and disk space. Back up/export saves and save current progress before trying new features. The release is intentionally offered through ordinary Update All with a prominent testing notice; new custom songs are not selected automatically.

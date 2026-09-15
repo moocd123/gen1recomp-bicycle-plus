@@ -1,0 +1,1 @@
+PASS 948 native screen/menu/control/storage checks across six edition contexts; audio/graphics boundaries simulated.

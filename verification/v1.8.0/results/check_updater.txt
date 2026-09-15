@@ -1,0 +1,1 @@
+PASS: native update metadata, preferred release ZIP and 1.4.2/1.5.0/1.6.0/1.7.0 -> 1.8.0 version discovery. Network/install not exercised.

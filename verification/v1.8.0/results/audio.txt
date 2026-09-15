@@ -1,0 +1,12 @@
+red
+PASS 162 real Music/Hooks/Events checks with simulated playback device: gains, modes, filters, resume, battles, fanfares, preview, fallback and cleanup.
+blue
+PASS 162 real Music/Hooks/Events checks with simulated playback device: gains, modes, filters, resume, battles, fanfares, preview, fallback and cleanup.
+yellow
+PASS 162 real Music/Hooks/Events checks with simulated playback device: gains, modes, filters, resume, battles, fanfares, preview, fallback and cleanup.
+gold
+PASS 162 real Music/Hooks/Events checks with simulated playback device: gains, modes, filters, resume, battles, fanfares, preview, fallback and cleanup.
+silver
+PASS 162 real Music/Hooks/Events checks with simulated playback device: gains, modes, filters, resume, battles, fanfares, preview, fallback and cleanup.
+crystal
+PASS 162 real Music/Hooks/Events checks with simulated playback device: gains, modes, filters, resume, battles, fanfares, preview, fallback and cleanup.
