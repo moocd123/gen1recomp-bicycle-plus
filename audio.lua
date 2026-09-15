@@ -169,6 +169,11 @@ function Audio.init(mod, settings, songLibrary)
       if not made then return nil, source end
       result.source = source
       result.chip = true
+    elseif selected and selected.kind == "file" and selected.openSource then
+      local ok,source,err=pcall(selected.openSource)
+      if not ok or not source then return nil,tostring(err or source or "Cannot open imported audio") end
+      result.source=source
+      withSource(result.source,"setLooping",true)
     elseif def.file then
       -- Respect file-backed music replacement mods, including intro+loop.
       local ok, source = pcall(love.audio.newSource, def.file, "stream")

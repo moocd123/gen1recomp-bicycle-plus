@@ -1,4 +1,4 @@
--- Bicycle Plus: source-only native mod for Gen1ReComp++ 0.2.59.
+-- AUTOBIKE+: retain bicycle_plus as the update/settings identity.
 return function(mod)
   local function module(name)
     return assert(load(assert(mod:read(name .. ".lua")),
@@ -7,6 +7,7 @@ return function(mod)
 
   local SongLibrary = module("song_library")
   local songs = SongLibrary.init(mod)
+  songs.attachPicker(module("import_picker").init(mod,songs))
   local songMenu
 
   local Hardware = module("colour_values").extend(module("hardware_colours"))
@@ -68,13 +69,9 @@ return function(mod)
     return choices
   end
   local function defineOptions()
-    local songChoices={{"ORIGINAL", "original"}}
-    local chosen=getSetting("bike_song")
-    if chosen~="original" then songChoices[#songChoices+1]={songs.describe(chosen),chosen} end
     mod.options:define({
-      {key="bike_song",type="choice",label="BICYCLE SONG",default="original",choices=songChoices},
+      {key="auto_mount", type="toggle", label="AUTO BIKE", default=true},
       {key="bike_song_resume",type="toggle",label="RESUME BIKE SONG",default=false},
-      {key="auto_mount", type="toggle", label="AUTO BICYCLE", default=true},
       {key="bike_colour", type="choice", label="WHEEL " .. colourWord(),
         default="original", choices=choicesFor("bike_colour")},
       {key="bike_stripes_colour", type="choice", label="STRIPE " .. colourWord(),
@@ -89,8 +86,6 @@ return function(mod)
         default="original", choices=choicesFor("bike_handlebars_colour")},
       {key="bike_volume", type="number", label="BIKE VOLUME", default=7,
         min=0, max=7, step=1},
-      {key="riding_music", type="choice", label="MUSIC ON BIKE", default="both",
-        choices=ridingMusicChoices},
       {key="riding_area_volume", type="choice", label="RIDING AREA VOL", default=-1,
         choices=ridingVolumeChoices},
       {key="riding_area_filter", type="choice", label="RIDING AREA FILTER", default=-1,
@@ -161,27 +156,17 @@ return function(mod)
   -- Retain the old keys as migration history, but never consume them at runtime.
   local function migrateAudio(game)
     if Runtime.safeMode or not (game and game.save and game.save.options and game.mods) then return end
-    local options = game.save.options
-    options.modOptions = options.modOptions or {}
-    game.mods.modOptions = game.mods.modOptions or {}
-    local saved = options.modOptions[mod.id] or {}
-    local live = game.mods.modOptions[mod.id] or {}
-    if live._audio_layout == 2 or saved._audio_layout == 2 then return end
-    local old = live.music_mode or saved.music_mode
-    local legacy = old ~= nil
-    local function put(key,value) saved[key]=value; live[key]=value end
-    if legacy then
-      if old == "area" then put("bike_volume",0)
-      elseif old == "cycling" then
-        options.musicVol = 0
-        require("src.core.Music").setVolumeLevel(0)
-      end
-      if live.bike_filter == nil and saved.bike_filter == nil then
-        put("bike_filter",math.max(0,math.min(3,tonumber(options.musicFilter) or 0)))
-      end
-    end
-    put("_audio_layout",2)
-    options.modOptions[mod.id], game.mods.modOptions[mod.id] = saved, live
+    local o=game.save.options;o.modOptions=o.modOptions or {};game.mods.modOptions=game.mods.modOptions or {}
+    local saved=o.modOptions[mod.id] or {};local live=game.mods.modOptions[mod.id] or {}
+    if saved._audio_layout==3 or live._audio_layout==3 then return end
+    local old=live.riding_music or saved.riding_music or live.music_mode or saved.music_mode
+    local function put(k,v) saved[k]=v;live[k]=v end
+    -- Replace the redundant mode switch with explicit cycling volumes.
+    -- The normal game's Music/SFX preferences are never rewritten.
+    if old=='bicycle' or old=='cycling' then put('riding_area_volume',0)
+    elseif old=='area' then put('bike_volume',0) end
+    put('riding_music','both');put('_audio_layout',3)
+    o.modOptions[mod.id],game.mods.modOptions[mod.id]=saved,live
     if game.writeOptions then game:writeOptions() end
   end
 
@@ -211,14 +196,14 @@ return function(mod)
     migrateAudio(game)
     migrateColours(game)
   end
-  local audioMenu = module("audio_menu").init(mod, {
-    getSetting=getSetting, setSetting=setSetting,
-    openSong=function(game)if songMenu then return songMenu.open(game)end end,
-  })
-
   local UI = module("colour_ui").init(mod)
+  local menus = module("settings_menu").init(mod,UI)
   songMenu = module("music_menu").init(mod, {
-    ui=UI,library=songs,audio=audio,getSetting=getSetting,setSetting=setSetting,
+    ui=UI,menus=menus,library=songs,audio=audio,getSetting=getSetting,setSetting=setSetting,
+  })
+  local audioMenu = module("audio_menu").init(mod, {
+    menus=menus,getSetting=getSetting,setSetting=setSetting,
+    openSong=function(game)return songMenu.open(game)end,
   })
   -- Chained callback scoped to a visible music menu. Other dropped files
   -- and other screens retain the engine/previous mod handler unchanged.
@@ -265,57 +250,18 @@ return function(mod)
     for _,zone in ipairs(colours.previewZones(g,rect.x,rect.y,rect.scale)) do zones[#zones+1]=zone end
     return zones
   end
-  local function menuRows()
-    return {
-      {id="bicycle_plus.auto",label="AUTO BICYCLE",
-        value=function() return getSetting("auto_mount") and "ON" or "OFF" end,
-        step=function(g) return setSetting(g,"auto_mount",not getSetting("auto_mount")) end},
-      {id="bicycle_plus.audio",label="AUDIO",
-        value=function() return "VOLUMES/FILTERS" end,
-        activate=function(g) audioMenu.open(g) end},
-      {id="bicycle_plus.colour",label=function() return "BIKE " .. colourWord() end,
-        value=function() return "WHEEL:" .. Hardware.label(getSetting("bike_colour")) end,
-        activate=function(g) Screens.push(g,"BicyclePlusColours") end},
-      {id="bicycle_plus.spelling",label="LANGUAGE",
-        value=function() return label(spellingChoices,getSetting("spelling")) end,
-        step=function(g,d) return setSetting(g,"spelling",cycle(spellingChoices,getSetting("spelling"),d)) end},
-    }
+  local function openSettings(game)
+    return menus.open(game,{title='AUTOBIKE+',tag='autobike.settings',rows={
+      {label='AUTO BIKE',value=function()return getSetting('auto_mount') and 'ON' or 'OFF'end,
+       step=function(_,s)setSetting(s.game,'auto_mount',not getSetting('auto_mount'))end},
+      {label='SFX FILTER',value=function()return label(filterChoices,getSetting('sfx_filter'))end,
+       step=function(d,s)setSetting(s.game,'sfx_filter',cycle(filterChoices,getSetting('sfx_filter'),d))end},
+      {label='BIKE APPEARANCE',action=function(s)Screens.push(s.game,'BicyclePlusColours')end},
+      {label='BIKE AUDIO',action=function(s)audioMenu.open(s.game)end},
+      {label='LANGUAGE',value=function()return getSetting('spelling')=='us' and 'US' or 'UK'end,
+       step=function(d,s)setSetting(s.game,'spelling',cycle(spellingChoices,getSetting('spelling'),d))end},
+    },footer='LR:CHANGE  A:OPEN'})
   end
-
-  mod.content.screens:register("BicyclePlusSettings", {new=function(game)
-    local self = {game=game,isOpaque=true,isModOptions=true,index=1,rows=menuRows(),sgbPalettes=palette}
-    function self:update()
-      local input = self.game.input
-      if input:wasPressed("b") or input:wasPressed("start") then self.game.stack:pop() return end
-      local last=#self.rows+1
-      if input:wasPressed("up") then self.index=(self.index-2)%last+1
-      elseif input:wasPressed("down") then self.index=self.index%last+1
-      elseif input:wasPressed("left") or input:wasPressed("right") or input:wasPressed("a") then
-        local row=self.rows[self.index]
-        if not row then if input:wasPressed("a") then self.game.stack:pop() end
-        elseif row.activate then if input:wasPressed("a") then row.activate(self.game) end
-        else row.step(self.game,input:wasPressed("left") and -1 or 1) end
-      end
-    end
-    function self:draw()
-      -- The game's four-box volume-menu layout, built from the shared font
-      -- API so this screen works on both generations without a Gen1-only UI.
-      local G=love.graphics
-      G.setColor(1,1,1,1) G.rectangle("fill",0,0,160,144)
-      for i,row in ipairs(self.rows) do
-        Font.drawBox(0,(i-1)*4,20,4)
-        G.setColor(0,0,0,1)
-        Font.draw(type(row.label)=="function" and row.label() or row.label,16,(i-1)*32+8)
-        Font.draw(row.value(self.game),24,(i-1)*32+16)
-        if i==self.index then Font.drawCode(Theme.cursor,8,(i-1)*32+8) end
-        G.setColor(1,1,1,1)
-      end
-      G.setColor(0,0,0,1) Font.draw("BACK",16,136)
-      if self.index==#self.rows+1 then Font.drawCode(Theme.cursor,8,136) end
-      G.setColor(1,1,1,1)
-    end
-    return self
-  end})
 
   local controls = module("colour_controls").init(mod, {
     hardware=Hardware, colours=colours, picker=picker, getSetting=getSetting,
@@ -328,16 +274,16 @@ return function(mod)
     audioMenu.update(game)
     rows=next(game,rows)
     for _,row in ipairs(rows) do if row.id=="bicycle_plus.settings" then return rows end end
-    rows[#rows+1]={id="bicycle_plus.settings",label="BICYCLE +",port=true,
+    rows[#rows+1]={id="bicycle_plus.settings",label="AUTOBIKE+",port=true,
       value=function() return "SETTINGS" end,
-      activate=function(g) Screens.push(g,"BicyclePlusSettings") end}
+      activate=function(g) openSettings(g) end}
     return rows
   end)
 
   local function update(game,dt)
     currentGame=game
     dropState.game=game
-    if songs.pending or songs.discardedPick then
+    if songs.picker and songs.picker.hasWork() then
       local row,err=songs.poll()
       if row or err then songs.lastImport={row=row,error=err} end
     end
@@ -373,6 +319,8 @@ return function(mod)
     return next(...)
   end)
   -- Diagnostics and automated verification; no global variables or hotkeys.
+  mod.exports.audioMenu=audioMenu
+  mod.exports.menus=menus
   mod.exports.songLibrary=songs
   mod.exports.songMenu=songMenu
   mod.exports.openSongs=songMenu.open
@@ -392,7 +340,7 @@ return function(mod)
   end
   mod.exports.openSettings=function(game)
     game=game or currentGame; migrateSettings(game)
-    Screens.push(game,"BicyclePlusSettings")
+    return openSettings(game)
   end
   mod.exports.openColours=function(game)
     game=game or currentGame; migrateSettings(game)

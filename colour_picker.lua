@@ -142,7 +142,7 @@ function Picker.init(mod,config)
         if input:wasPressed('start')then self:commitEdit();return end
         if input:wasPressed('select')then self:erase();return end
         if input:wasPressed('a')then self:padAction(self:pad()[self.edit.index]);return end
-        local key=U.direction(self,dt)
+        local key=U.tapDirection(self)
         if key then self:movePad(key)end
         return
       end

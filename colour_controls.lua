@@ -45,7 +45,7 @@ function Controls.init(mod,config)
       local input=self.game.input
       if input:wasPressed("b")or input:wasPressed("start")then self.game.stack:pop();return end
       if input:wasPressed("a")then self:choose();return end
-      if UI.direction(self,dt)then self.index=3-self.index end
+      if UI.tapDirection(self)then self.index=3-self.index end
     end
     function self:pointer(e,x,y)
       if e.phase=="pressed"or e.phase=="moved"then
@@ -102,7 +102,7 @@ function Controls.init(mod,config)
       if input:wasPressed("b")or input:wasPressed("start")then self.game.stack:pop();return end
       if input:wasPressed("a")then self:activate();return end
       if input:wasPressed("select")and colours.needsColourMode(self.game)then colours.enableColourMode(self.game);return end
-      local key=UI.direction(self,dt)
+      local key=UI.tapDirection(self)
       if key=="up"then self.index=(self.index-2)%#self.rows+1
       elseif key=="down"then self.index=self.index%#self.rows+1
       elseif key=="left"or key=="right"then self:toggle()end

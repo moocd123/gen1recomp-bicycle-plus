@@ -13,88 +13,14 @@ function Menu.init(mod, config)
   end
   local function pop(game)game.stack:pop()end
   local message,openList,openDetail,openRoot,openRename,browseInbox,inboxHelp
-  local function generic(game,opts)
-    local s={game=game,isOpaque=true,isModOptions=true,_bicycleUI=U,index=1,scroll=0,timer=0,
-      title=opts.title,rows=opts.rows or {},subtitle=opts.subtitle,onUpdate=opts.update,
-      bicycleMusicPreview=opts.preview==true,_bicycleMusic=true}
-    function s:sgbPalettes()return U.zones()end
-    function s:exit()if opts.exit then opts.exit()end end
-    function s:activate()
-      local row=self.rows[self.index]
-      if row and row.action then row.action(self)end
-    end
-    function s:update(dt)
-      self.timer=self.timer+(dt or 0)
-      if self.onUpdate then self.onUpdate(self)end
-      local input=self.game.input
-      if input:wasPressed('b')or input:wasPressed('start')then pop(self.game);return end
-      if input:wasPressed('a')then self:activate();return end
-      local key=U.direction(self,dt)
-      if #self.rows>0 then
-        if key=='up'then self.index=(self.index-2)%#self.rows+1
-        elseif key=='down'then self.index=self.index%#self.rows+1
-        elseif key=='left'then self.index=math.max(1,self.index-8)
-        elseif key=='right'then self.index=math.min(#self.rows,self.index+8)end
-      end
-    end
-    function s:visible()
-      if self.index<=self.scroll then self.scroll=self.index-1 end
-      if self.index>self.scroll+8 then self.scroll=self.index-8 end
-      self.scroll=math.max(0,self.scroll)
-    end
-    function s:pointer(e,x,y)
-      if e.phase~='pressed' and e.phase~='moved'then return true end
-      if e.source=='mouse' and e.phase=='pressed' and e.button~=1 then return false end
-      self:visible()
-      for i=1,8 do
-        local index=self.scroll+i
-        if self.rows[index] and U.hit(x,y,{4,37+(i-1)*10,152,10})then
-          self.index=index;if e.phase=='pressed'then self:activate()end;return true
-        end
-      end
-      if e.phase=='pressed'then
-        if U.hit(x,y,{112,127,46,17})then pop(self.game)
-        elseif U.hit(x,y,{4,127,38,17})then self.index=math.max(1,self.index-8)
-        elseif U.hit(x,y,{44,127,38,17})then self.index=math.min(#self.rows,self.index+8)end
-      end
-      return true
-    end
-    function s:draw()
-      U.background();U.centre(text(self.title,25),4)
-      local sub=type(self.subtitle)=='function'and self.subtitle()or self.subtitle
-      sub=tostring(sub or ''):upper():gsub('[^A-Z0-9 :/#%.%+%-]',' ')
-      if #sub>25 then
-        local span=#sub-25;local step=math.floor(math.max(0,self.timer-1.5)*4)%(span+14)
-        local at=math.min(span,step)
-        sub=sub:sub(at+1,at+25)
-      end
-      U.text(text(sub,25),5,17)
-      U.text(('%d/%d'):format(self.index,#self.rows),5,27)
-      self:visible()
-      for i=1,8 do
-        local row=self.rows[self.scroll+i]
-        if row then
-          local y=39+(i-1)*10
-          if self.index==self.scroll+i then U.focus(4,y-2,152,10);U.marker(6,y)end
-          local name=type(row.label)=='function'and row.label()or row.label
-          U.text(text(name,23),16,y)
-        end
-      end
-      U.text('PREV',5,130);U.text('NEXT',45,130);U.text('B:BACK',116,130);U.white()
-    end
-    return s
+  local menus=config.menus
+  openList=function(game,opts)
+    opts.music=true
+    return menus.open(game,opts)
   end
-  mod.content.screens:register('BicyclePlusSongList',{new=generic})
-  openList=function(game,opts)return Screens.push(game,'BicyclePlusSongList',opts)end
   message=function(game,title,body)
-    local rows={};body=tostring(body or '')
-    while #body>0 do
-      local at=body:sub(1,23):match('^.*() ')or math.min(23,#body)
-      if #body<=23 then at=#body end
-      rows[#rows+1]={label=body:sub(1,at)};body=body:sub(at+1)
-    end
-    rows[#rows+1]={label='BACK',action=function()pop(game)end}
-    openList(game,{title=title,rows=rows,subtitle='A:BACK / B:BACK'})
+    return openList(game,{title=title,subtitle=tostring(body or ''),rows={
+      {label='BACK',action=function()pop(game)end}},footer='A:BACK'})
   end
   local function choose(game,id)
     if set(game,'bike_song',id)then audio.stopPreview();return true end
@@ -139,7 +65,7 @@ function Menu.init(mod, config)
         action=function()openDetail(game,row)end}
     end
     rows[#rows+1]={label='BACK',action=function()pop(game)end}
-    return openList(game,{title=edition:upper()..' SOUNDTRACK',subtitle='A:SONG OPTIONS',rows=rows})
+    return openList(game,{title=edition:upper()..' SOUNDTRACK',subtitle='A:SONG OPTIONS',rows=rows,pages=true})
   end
   local function browseFiles(game)
     local revision=-1
@@ -154,84 +80,90 @@ function Menu.init(mod, config)
       s.rows[#s.rows+1]={label='BACK',action=function()pop(game)end}
       s.index=math.min(s.index,#s.rows)
     end
-    local s=openList(game,{title='MY AUDIO FILES',subtitle='A:SONG OPTIONS',update=refresh})
+    local s=openList(game,{title='IMPORTED SONGS',subtitle='A:SONG OPTIONS',update=refresh,pages=true})
     refresh(s);return s
   end
-  local function handleImported(game,row,err)
-    if row and type(row)=='table'then openDetail(game,row)
-    else message(game,'AUDIO IMPORT',err or 'No file selected')end
-  end
-  local function chooseImport(game)
-    local row,err=library.chooseFile()
-    if row=='pending'then
-      local s
-      s=openList(game,{title='IMPORT AUDIO',subtitle='RETURN AFTER CHOOSING',rows={
-        {label='CANCEL WAIT',action=function()library.cancelPick();pop(game)end},
-      },update=function(page)
-        if library.pending then return end
-        pop(game)
-        local outcome=library.lastImport
-        library.lastImport=nil
-        handleImported(game,outcome and outcome.row, outcome and outcome.error or library.notice)
-      end,exit=function()library.cancelPick()end})
-    elseif row=='browser' then browseInbox(game,'',err)
-    else handleImported(game,row,err)end
-  end
-  browseInbox=function(game,relative,notice)
-    relative=relative or ''
-    local rows={}
-    for _,entry in ipairs(library.inbox(relative))do local row=entry
-      rows[#rows+1]={label=(row.directory and 'FOLDER: ' or '')..row.name,action=function()
-        if row.directory then browseInbox(game,row.relative)
-        else local imported,err=library.importInbox(row.relative);handleImported(game,imported,err)end
-      end}
+  local function handleImported(game,row,err,page)
+    if row and type(row)=='table' then
+      if choose(game,row.id) then
+        if page then page.notice='SELECTED: '..row.name;page.timer=0 end
+        return true
+      end
+    elseif err~='IMPORT CANCELLED' then
+      if page then page.notice=err or 'IMPORT FAILED';page.timer=0
+      else message(game,'IMPORT FAILED',err or 'Cannot read this audio')end
     end
-    if #rows==0 then rows={{label='NO AUDIO FILES HERE'}} end
-    rows[#rows+1]={label='REFRESH FOLDER',action=function()pop(game);browseInbox(game,relative)end}
-    rows[#rows+1]={label='INBOX LOCATION / HELP',action=function()inboxHelp(game)end}
-    rows[#rows+1]={label='BACK',action=function()pop(game)end}
-    openList(game,{title='AUDIO FILE BROWSER',subtitle=notice or (relative~='' and relative or 'INBOX: MP3 OGG WAV FLAC'),rows=rows})
+    return false
   end
-  inboxHelp=function(game)
-    local rows={
-      {label='OPEN INBOX FOLDER',action=function()
-        local ok,err=library.openInboxFolder();if not ok then message(game,'INBOX LOCATION',library.inboxPath()..' '..tostring(err))end
-      end},
-      {label='COPY FOLDER PATH',action=function()
-        local ok,err=library.copyInboxPath();message(game,ok and 'PATH COPIED' or 'COPY UNAVAILABLE',err)
-      end},
-      {label='SHOW FOLDER PATH',action=function()message(game,'INBOX PATH',library.inboxPath())end},
-      {label='HOW TO IMPORT',action=function()
-        message(game,'PORTABLE IMPORT','Copy MP3 OGG WAV or FLAC files into the music inbox using your platform file manager. Then choose BROWSE MUSIC INBOX. Subfolders are supported. Desktop builds can also drag an audio file onto this music menu. System picker availability depends on your build.')
-      end},
-      {label='BACK',action=function()pop(game)end},
-    }
-    return openList(game,{title='AUDIO IMPORT HELP',subtitle='LOCAL FILES - NO UPLOAD',rows=rows})
+  -- No tutorial or alternate-import entries. On a picker-less build this one
+  -- Import action opens the engine's in-app file browser directly.
+  browseInbox=function(game)
+    local browser=library.picker.browser()
+    if browser.active then message(game,'FILE BROWSER BUSY','Close the other file browser first');return end
+    local ready,why=browser.open({title='Select audio',mode='all',initialPath='.'})
+    if not ready then message(game,'FILE BROWSER',why);return end
+    local last=''
+    local function refresh(page)
+      if last==browser.currentDir and page.ready then return end
+      last=browser.currentDir;page.ready=true;page.rows={}
+      page.rows[1]={label='.. PARENT FOLDER',action=function()
+        local parent=browser.currentDir:gsub('/$',''):match('^(.*)/[^/]+$')
+        local ok,err=browser.setDirectory(parent and parent~='' and parent or '/')
+        if not ok then page.notice=err end;page.ready=false
+      end}
+      for _,entry in ipairs(browser.entries or {})do local item=entry
+        local ext=item.name:lower():match('%.([^%.]+)$')
+        if item.isDir or ({mp3=true,ogg=true,wav=true,flac=true})[ext]then
+          page.rows[#page.rows+1]={label=(item.isDir and 'FOLDER: 'or'')..item.name,action=function()
+            if item.isDir then local ok,err=browser.setDirectory(item.path);if not ok then page.notice=err end;page.ready=false
+            else
+              local row,err=library.picker.readSelected(item.path)
+              if row then pop(game);handleImported(game,row,err,game.stack:top())
+              else page.notice=err;page.timer=0 end
+            end
+          end}
+        end
+      end
+    end
+    local page=openList(game,{title='SELECT AUDIO FILE',subtitle=function()return browser.currentDir end,
+      rows={},update=refresh,pages=true,exit=function()browser.close(nil)end})
+    refresh(page);return page
+  end
+  local function chooseImport(game,page)
+    audio.stopPreview()
+    local row,err=library.chooseFile()
+    if row=='pending' then page.notice='CHOOSING AUDIO FILE';page.timer=0
+    elseif row=='browser' then browseInbox(game)
+    else handleImported(game,row,err,page)end
   end
   openRoot=function(game)
     if Runtime.safeMode then return false end
     local rows={
-      {label='ORIGINAL BICYCLE THEME',action=function()choose(game,'original')end},
+      {label='ORIGINAL BICYCLE THEME',action=function(s)choose(game,'original');s.notice=nil end},
       {label='CURRENT GAME SONGS',action=function()browseGame(game,library.currentEdition())end},
       {label='OTHER IMPORTED GAMES',action=function()
         local other={}
         for _,entry in ipairs(library.editions(game))do local row=entry
-          if row.id~=library.currentEdition() then
-            other[#other+1]={label=row.label..(row.available and''or' - NOT IMPORTED'),
+          if row.id~=library.currentEdition() and row.available then
+            other[#other+1]={label=row.label,
               action=function()browseGame(game,row.id)end}
           end
         end
-        openList(game,{title='IMPORTED SOUNDTRACKS',subtitle='USES LOCAL ROM IMPORTS',rows=other})
+        if #other==0 then other[1]={label='NO OTHER IMPORTED GAMES'}end
+        openList(game,{title='OTHER IMPORTED GAMES',rows=other})
       end},
-      {label='MY AUDIO FILES',action=function()browseFiles(game)end},
-      {label='IMPORT AUDIO FILE',action=function()chooseImport(game)end},
-      {label='BROWSE MUSIC INBOX',action=function()browseInbox(game)end},
-      {label=function()return 'ON MOUNT: '..(get('bike_song_resume')and'RESUME'or'RESTART')end,
-        action=function()set(game,'bike_song_resume',not get('bike_song_resume'))end},
-      {label='FILE IMPORT HELP',action=function()inboxHelp(game)end},
-      {label='BACK',action=function()pop(game)end},
+      {label='IMPORTED SONGS',action=function()browseFiles(game)end},
+      {label='IMPORT SONG',action=function(s)chooseImport(game,s)end},
     }
-    return openList(game,{title='BICYCLE SONG',subtitle=function()return library.describe(get('bike_song'))end,rows=rows})
+    return openList(game,{title='BIKE SONG',tag='autobike.songs',rows=rows,
+      subtitle=function()return library.describe(get('bike_song'))end,
+      update=function(page)
+        if library.lastImport then
+          local event=library.lastImport;library.lastImport=nil
+          handleImported(game,event.row,event.error,page)
+        end
+      end,
+      exit=function()library.cancelPick();audio.stopPreview()end})
   end
 
   mod.content.screens:register('BicyclePlusSongName',{new=function(game,opts)
@@ -263,12 +195,13 @@ function Menu.init(mod, config)
       return true
     end
     function s:update(dt)
+      self.timer=(self.timer or 0)+(dt or 0)
       local input=game.input
       if input:wasPressed('b')then pop(game);return end
       if input:wasPressed('start')then self:key('SAVE');return end
       if input:wasPressed('select')then self:key('DEL');return end
       if input:wasPressed('a')then self:key(chars[self.index]);return end
-      local key=U.direction(self,dt)
+      local key=U.tapDirection(self)
       if key then local d=key=='up'and -6 or key=='down'and 6 or key=='left'and -1 or 1;self.index=(self.index-1+d)%#chars+1 end
     end
     function s:pointer(e,x,y)
@@ -281,7 +214,7 @@ function Menu.init(mod, config)
     function s:draw()
       U.background();U.centre('SONG NAME',4)
       if self.replace then U.focus(5,16,150,14)end
-      U.text(text(self.buffer,24),8,20)
+      U.marquee(self.buffer,8,20,24,self.timer or 0)
       for i,c in ipairs(chars)do
         local label=({SPACE='SP',CLEAR='CLR',SAVE='OK',BACK='BACK'})[c]or c
         U.button(label,{5+(i-1)%6*25,37+math.floor((i-1)/6)*12,24,11},self.index==i)
@@ -302,12 +235,11 @@ function Menu.init(mod, config)
     if not ({mp3=true,ogg=true,wav=true,flac=true})[ext] then return false end
     audio.stopPreview()
     local call,row,err=pcall(library.importFile,file)
-    handleImported(game,call and row or nil,call and err or 'Could not import the dropped file')
+    handleImported(game,call and row or nil,call and err or 'Could not import the dropped file',top)
     return true
   end
   api.browseInbox=browseInbox
   api.chooseImport=chooseImport
-  api.inboxHelp=inboxHelp
   api.browseGame=browseGame;api.openDetail=openDetail;api.openRename=openRename
   return api
 end

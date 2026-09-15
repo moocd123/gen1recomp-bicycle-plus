@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.9.0 — AUTOBIKE+ rebrand and music repair
+
+- Display name AUTOBIKE+; keep update identity, repository and saved keys.
+- AUTO BIKE first, normal SFX FILTER, BIKE APPEARANCE and BIKE AUDIO in one root menu.
+- Restore native Audio menu and labels; no duplicate song/cycling/settings injections.
+- One cycling audio page and one song chooser; direct Import Song, automatic selection on success and single-line marquee names.
+- Replace compatibility-overlay paths with scoped cache/FileData audio; recover old imports and expose foreign sound banks to the real synthesiser.
+- Route picking/reading through native engine APIs in the genuine sandbox; isolate generated staging and cancelled requests.
+- Press-edge menu/appearance navigation; retain continuous colour-chart adjustments.
+- Migrate older mix modes to equivalent cycling volumes without changing normal music/SFX preferences.
+- Add real-sandbox tests and a real LÖVE codec/stream/storage test gate.
+
 ## 1.8.0 — Custom cycling music
 
 - Local audio import, preview, rename and confirmed library-copy removal.

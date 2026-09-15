@@ -3,7 +3,8 @@
 -- replace imported tracks. Only explicitly selected files / the dedicated
 -- inbox and the six already-imported audio caches are read.
 local Library = {}
-Library.ROOT = 'mod_data/bicycle_plus/music'
+Library.ROOT = 'mod_cache/bicycle_plus/music'
+Library.LEGACY_ROOT = 'mod_data/bicycle_plus/music'
 Library.PENDING = 'mods/bicycle_plus/baseroms/bicycle_plus_audio_pick.bin'
 Library.MAX_BYTES = 64 * 1024 * 1024
 Library.MAX_TRACKS = 128
@@ -59,20 +60,49 @@ function Library.init(mod)
   local Version=require('src.core.GameVersion')
   local Runtime=require('src.mods.Runtime')
   local root=Library.ROOT
+  local cache=assert(mod.cache, 'AUTOBIKE+ requires the engine mod.cache API')
   local api={revision=0,notice=nil,pending=false}
   local foreign={}; local index={seq=0,tracks={}}; local loaded=false
-  local function info(path) local ok,v=pcall(fs.getInfo,path,'file');return ok and v or nil end
-  local function anyInfo(path) local ok,v=pcall(fs.getInfo,path);return ok and v or nil end
-  local function read(path) local ok,v=pcall(fs.read,path);return ok and v or nil end
-  local function mkdir(path)
-    local ok,yes,err=pcall(fs.createDirectory,path)
-    return ok and yes, ok and err or yes
+  -- A sandbox filesystem path is an overlay alias, not an audio-engine path.
+  -- Use the engine-owned installation cache; legacy storage is read-only.
+  local function rel(path)
+    assert(type(path)=='string' and path:sub(1,#root+1)==root..'/', 'Outside music library')
+    local tail=path:sub(#root+2)
+    assert(not tail:find('..',1,true) and not tail:find('\\',1,true), 'Invalid music path')
+    return 'music/'..tail
+  end
+  local function legacy(path)
+    return Library.LEGACY_ROOT..path:sub(#root+1)
+  end
+  local function read(path)
+    local ok,v=pcall(cache.read,cache,rel(path))
+    if ok and type(v)=='string' then return v end
+    -- v1.8 stores in the compatibility overlay; old non-sandbox copies may
+    -- reside at the historical native path. Neither source is removed.
+    ok,v=pcall(fs.read,legacy(path))
+    if ok and type(v)=='string' then return v end
+    ok,v=pcall(Cache.readAt,legacy(path))
+    return ok and type(v)=='string' and v or nil
+  end
+  local function info(path)
+    local ok,v=pcall(cache.info,cache,rel(path))
+    if ok and v and v.type=='file' then return v end
+    ok,v=pcall(fs.getInfo,legacy(path),'file')
+    if ok and v then return v end
+    local bytes=read(path)
+    return bytes and {type='file',size=#bytes} or nil
   end
   local function write(path,bytes)
-    local ok,yes,err=pcall(fs.write,path,bytes)
+    if Runtime.safeMode then return nil,'Safe mode: library changes disabled' end
+    local ok,yes,err=pcall(cache.write,cache,rel(path),bytes)
     if not ok or not yes then return nil,tostring(err or yes or 'Write failed') end
     return true
   end
+  local function remove(path)
+    if Runtime.safeMode then return false end
+    return cache:delete(rel(path))
+  end
+  local function mkdir() return true end -- cache:write creates confined parents
   local function decodeIndex(text)
     if type(text)~='string' or #text>256*1024 then return nil end
     local ok,t=pcall(Json.decode,text)
@@ -115,14 +145,37 @@ function Library.init(mod)
   local function findFile(id)
     for _,r in ipairs(api.files()) do if r.id==id then return r end end
   end
-  local function validateAudio(path)
-    if not (love.audio and love.audio.newSource) then return nil,'Audio decoding unavailable on this build' end
-    local ok,source=pcall(love.audio.newSource,path,'stream')
-    if not ok then return nil,'Audio format could not be decoded on this device' end
+  local function sourceFromBytes(bytes,name)
+    if not (love.audio and love.audio.newSource and fs.newFileData) then
+      return nil,'Audio decoding unavailable on this build'
+    end
+    -- Two-argument newFileData constructs data, not a sandbox File proxy.
+    local made,data=pcall(fs.newFileData,bytes,name)
+    if not made or not data then return nil,'Could not prepare audio data' end
+    local ok,source=pcall(love.audio.newSource,data,'stream')
+    if data.release then pcall(data.release,data) end
+    if not ok then return nil,'Cannot decode audio: '..tostring(source) end
+    return source
+  end
+  local function validateAudio(bytes,name)
+    local source,err=sourceFromBytes(bytes,name);if not source then return nil,err end
     local good,duration=pcall(source.getDuration,source,'seconds')
     pcall(source.release,source)
-    if not good or type(duration)~='number' or duration~=duration or duration<=0 or duration==math.huge then return nil,'Audio has no readable duration' end
+    if not good or type(duration)~='number' or duration~=duration or duration<=0 or duration==math.huge then
+      return nil,'Audio has no readable duration'
+    end
     return duration
+  end
+  function api.openSource(id)
+    local row=findFile(id)
+    if not row then return nil,'Imported song is missing' end
+    local details=info(row.path)
+    if not details or (tonumber(details.size) or 0)>Library.MAX_BYTES then return nil,'Imported song is missing or too large' end
+    local bytes=read(row.path)
+    if not bytes or #bytes>Library.MAX_BYTES or hash(bytes)~=id:sub(6) then
+      return nil,'Imported audio copy is damaged; import the original again'
+    end
+    return sourceFromBytes(bytes,'autobike-'..id:sub(6)..'.'..row.ext)
   end
   function api.importBytes(bytes,name)
     if Runtime.safeMode then return nil,'Safe mode: import disabled' end
@@ -134,12 +187,9 @@ function Library.init(mod)
     local id='file:'..digest;local existing=findFile(id)
     if existing and not existing.missing then return existing,'ALREADY IMPORTED' end
     if not existing and #index.tracks>=Library.MAX_TRACKS then return nil,'Library full: remove a song first (128 max)' end
-    local made,err=mkdir(root..'/tracks');if not made then return nil,err end
-    local stage=root..'/import.'..ext
-    local wrote;wrote,err=write(stage,bytes);if not wrote then return nil,err end
-    local duration;duration,err=validateAudio(stage)
-    fs.remove(stage)
+    local duration,err=validateAudio(bytes,'autobike-import.'..ext)
     if not duration then return nil,err end
+    local wrote
     local dest=root..'/tracks/'..digest..'.'..ext
     wrote,err=write(dest,bytes);if not wrote then return nil,err end
     local check=read(dest)
@@ -172,12 +222,7 @@ function Library.init(mod)
     return api.importBytes(bytes,nameOk and name or nil)
   end
   function api.importPath(path)
-    -- Only a path returned by the native desktop picker calls this method.
-    if type(path)~='string' or path:find('%z') or not (io and io.open) then return nil,'Cannot read selected path on this build' end
-    local called,f,err=pcall(io.open,path,'rb');if not called or not f then return nil,tostring(err or f) end
-    local ok,bytes=pcall(f.read,f,Library.MAX_BYTES+1);pcall(f.close,f)
-    if not ok then return nil,'Cannot read selected file' end
-    return api.importBytes(bytes,path)
+    return api.picker.readSelected(path)
   end
   function api.rename(id,name)
     loadIndex();if not findFile(id) then return nil,'Song not found' end
@@ -191,172 +236,20 @@ function Library.init(mod)
     for _,r in ipairs(index.tracks) do if r.id~=id then nextIndex.tracks[#nextIndex.tracks+1]=copy(r) end end
     local ok,err=saveIndex(nextIndex);if not ok then return nil,err end
     -- Delete only this library's hashed copy; never the user's source file.
-    fs.remove(row.path);return true
+    remove(row.path);return true
   end
-  -- Portable browser scope: the dedicated inbox and its child folders.
-  -- Never enumerate a player's home, saves, installed mods or ROM folders.
-  local function inboxRelative(value)
-    if type(value)~='string' or #value>1024 or value:find('[\\:%z]')
-        or value:sub(1,1)=='/' or value:find('//',1,true) then return nil end
-    local count=0
-    for part in value:gmatch('[^/]+') do
-      count=count+1
-      if part=='.' or part=='..' or count>16 then return nil end
-    end
-    return value:gsub('/$','')
-  end
-  function api.inbox(relative)
-    relative=inboxRelative(relative or '')
-    if relative==nil then return {},'Invalid inbox folder' end
-    local base=root..'/inbox'
-    if not Runtime.safeMode then mkdir(base) end
-    local folder=base..(relative~='' and '/'..relative or '')
-    local ok,items=pcall(fs.getDirectoryItems,folder)
-    if not ok or type(items)~='table' then return {},'Cannot list inbox folder' end
-    local rows={}
-    for _,name in ipairs(items) do
-      if type(name)=='string' and name~='.' and name~='..' and not name:find('[/\\%z]') then
-        local child=relative~='' and relative..'/'..name or name
-        local path=base..'/'..child;local details=anyInfo(path)
-        local ext=name:lower():match('%.([a-z0-9]+)$')
-        if details and (details.type=='directory' or (details.type=='file' and formats[ext])) then
-          rows[#rows+1]={name=name,relative=child,path=path,directory=details.type=='directory'}
-        end
-      end
-    end
-    table.sort(rows,function(a,b)
-      if a.directory~=b.directory then return a.directory end
-      if a.name:lower()==b.name:lower() then return a.name<b.name end
-      return a.name:lower()<b.name:lower()
-    end)
-    return rows
-  end
-  function api.importInbox(relative)
-    relative=inboxRelative(relative)
-    if not relative or relative=='' then return nil,'Invalid inbox file' end
-    local parent=relative:match('^(.*)/[^/]+$') or ''
-    for _,row in ipairs(api.inbox(parent)) do if row.relative==relative and not row.directory then
-      local details=info(row.path)
-      if not details then return nil,'Inbox file no longer exists' end
-      if details.size>Library.MAX_BYTES then return nil,'Choose a file no larger than 64 MiB' end
-      return api.importBytes(read(row.path),row.name)
-    end end
-    return nil,'Inbox file not found'
-  end
-  function api.inboxPath()
-    local ok,dir=pcall(fs.getSaveDirectory)
-    return ok and type(dir)=='string' and dir..'/'..root..'/inbox' or root..'/inbox'
-  end
-  function api.copyInboxPath()
-    if not (love.system and love.system.setClipboardText) then return nil,'Clipboard unavailable on this build' end
-    local ok,err=pcall(love.system.setClipboardText,api.inboxPath())
-    return ok,ok and 'INBOX PATH COPIED' or tostring(err)
-  end
-  function api.openInboxFolder()
-    if Runtime.safeMode then return nil,'Safe mode: folder opening disabled' end
-    mkdir(root..'/inbox')
-    if not (love.system and love.system.openURL) then return nil,'No folder opener on this build' end
-    local path=api.inboxPath():gsub('\\','/')
-    local uri='file://'..(path:sub(1,1)=='/' and '' or '/')..path:gsub('[^%w%-%._~/:]',function(c)return ('%%%02X'):format(c:byte())end)
-    local ok,yes=pcall(love.system.openURL,uri)
-    if ok and yes then return true end
-    return nil,'Open the music inbox using your platform file manager or storage transfer tool'
-  end
-  -- Both mobile bridges permit the dedicated mod/baseroms staging location.
-  -- It is temporary only; imported audio is copied outside the install tree.
-  -- Never fall back to the engine's picked_rom/mod/save destinations.
-  function api.chooseFile()
-    if Runtime.safeMode then return nil,'Safe mode: import disabled' end
-    if api.pending then return nil,'A file selection is already open' end
-    mkdir(root)
-    if love.system and type(love.system.pickFile)=='function' and type(love.system.pickFileKinds)=='function' then
-      local ok,kinds=pcall(love.system.pickFileKinds)
-      if ok and type(kinds)=='string' and (','..kinds..','):find(',required_import,',1,true) then
-        if info(Library.PENDING..'.part') then return nil,'Previous file is still being copied' end
-        api.discardedPick=false
-        fs.remove(Library.PENDING)
-        local oldMarker=read('pick_complete.flag')
-        if oldMarker and oldMarker:find('\n'..Library.PENDING..'\n',1,true) then fs.remove('pick_complete.flag') end
-        local flag,flagErr=write(root..'/awaiting.txt','1')
-        if not flag then return nil,flagErr end
-        local shown,yes=pcall(love.system.pickFile,'required_import',Library.PENDING)
-        if shown and yes then api.pending=true;api.notice='CHOOSE AN AUDIO FILE';return 'pending' end
-        fs.remove(root..'/awaiting.txt')
-      end
-    end
-    local ok,Picker=pcall(require,'src.core.FilePicker')
-    local available,canPick=false,false
-    if ok and type(Picker)=='table' and type(Picker.available)=='function' then available,canPick=pcall(Picker.available) end
-    if available and canPick then
-      local yes,path=pcall(Picker.open,'Import bicycle music',{label='Audio',exts={'mp3','ogg','wav','flac'},tempName='bicycle_plus_audio'})
-      if not yes or not path then return 'browser','PICKER CLOSED / UNAVAILABLE' end
-      return api.importPath(path)
-    end
-    return 'browser','NO SYSTEM PICKER ON THIS BUILD'
-  end
-  function api.poll()
-    if Runtime.safeMode or (not api.pending and not api.discardedPick) then return end
-    local errorFlag=read('pick_error.flag')
-    if errorFlag and errorFlag:find(Library.PENDING,1,true) then
-      api.pending=false;api.discardedPick=false;fs.remove(root..'/awaiting.txt');fs.remove('pick_error.flag');api.notice=errorFlag:find('cancelled:',1,true) and 'IMPORT CANCELLED' or 'FILE PICKER ERROR'
-      fs.remove(Library.PENDING..'.part')
-      return nil,api.notice
-    end
-    local marker=read('pick_complete.flag')
-    if not marker or not marker:find('\n'..Library.PENDING..'\n',1,true) then return end
-    local fileInfo=info(Library.PENDING)
-    if not fileInfo then return end
-    -- Wait for the native completion marker, not merely the preceding rename.
-    -- Consume only our own marker, leaving another mod/importer untouched.
-    fs.remove('pick_complete.flag')
-    api.pending=false;fs.remove(root..'/awaiting.txt')
-    if api.discardedPick then api.discardedPick=false;fs.remove(Library.PENDING);return end
-    if fileInfo.size>Library.MAX_BYTES then fs.remove(Library.PENDING);api.notice='FILE EXCEEDS 64 MIB';return nil,api.notice end
-    local bytes=read(Library.PENDING);fs.remove(Library.PENDING)
-    local row,err=api.importBytes(bytes,nil);api.notice=row and ('IMPORTED '..row.name) or err
-    return row,err
-  end
-  function api.cancelPick()
-    if api.pending then
-      api.pending=false;api.discardedPick=true;write(root..'/awaiting.txt','discard')
-    end
-  end
-
   local function loadTable(bytes,where)
-    if type(bytes)~='string' or #bytes>4*1024*1024 then return nil,'Audio cache is missing or too large' end
-    local at=1
-    if not bytes:match('^%s*return%s*{') then return nil,'Expected a generated table' end
-    while at<=#bytes do
-      local char=bytes:sub(at,at)
-      if char:match('%s') then at=at+1
-      elseif char=='"' then
-        at=at+1;local closed=false
-        while at<=#bytes do
-          local c=bytes:sub(at,at)
-          if c=='\\' then at=at+2
-          elseif c=='"' then at=at+1;closed=true;break
-          else at=at+1 end
-        end
-        if not closed then return nil,'Invalid cache string' end
-      elseif char:match('[%a_]') then
-        local token=bytes:sub(at):match('^[%a_][%w_]*');at=at+#token
-        if token~='return' and token~='true' and token~='false' and token~='nil'
-            and not bytes:sub(at):match('^%s*=') then return nil,'Executable audio metadata is not permitted' end
-      elseif char:match('[%d%-]') then
-        local num=bytes:sub(at):match('^%-?%d+%.?%d*[eE]?[+%-]?%d*')
-        if not num or not tonumber(num) then return nil,'Invalid cache number' end
-        at=at+#num
-      elseif char:match('[{}%[%]=,]') then at=at+1
-      else return nil,'Unsupported audio metadata token' end
+    if type(bytes)~='string' or #bytes>8*1024*1024 then return nil,'Unreadable audio cache' end
+    local Serializer=require('src.core.SaveSerializer')
+    local ok,t,err=pcall(Serializer.decode,bytes,{allowArray=true,allowComments=true,
+      maxBytes=8*1024*1024,maxDepth=48,maxNodes=200000,maxStringBytes=2*1024*1024,
+      maxTableEntries=100000,rootName='audio cache'})
+    if not ok or type(t)~='table' or type(t.songs)~='table' then
+      return nil,'Invalid audio cache: '..tostring(err or t)
     end
-    local chunk,err
-    if loadstring then chunk,err=loadstring(bytes,'@'..where);if chunk and setfenv then setfenv(chunk,{}) end
-    else chunk,err=load(bytes,'@'..where,'t',{}) end
-    if not chunk then return nil,'Invalid audio cache' end
-    local ok,t=pcall(chunk)
-    if not ok or type(t)~='table' or type(t.songs)~='table' then return nil,'Unreadable audio cache' end
     return t
   end
+
   local function currentEdition() return Version.get() end
   function api.gameData(edition,game)
     if not allowed[edition] then return nil,'Unsupported game' end
@@ -379,7 +272,7 @@ function Library.init(mod)
     -- while the active area's soundtrack is playing from another cartridge.
     local digest=hash(programs);local file=root..'/cache/'..edition..'-'..digest..'.bin'
     local ok;ok,err=mkdir(root..'/cache');if not ok then return nil,err end
-    local present=read(file)
+    local present=cache:read(rel(file))
     if not present or #present~=#programs or hash(present)~=digest then
       ok,err=write(file,programs);if not ok then return nil,err end
       local checked=read(file)
@@ -415,7 +308,8 @@ function Library.init(mod)
     if id:sub(1,5)=='file:' then
       local row=findFile(id)
       if not row or row.missing then return nil,'Selected audio file is missing; original theme will play' end
-      return {key=id,label=row.name,data={audio={}},def={file=row.path},custom=true,kind='file'}
+      return {key=id,label=row.name,data={audio={}},def={file=row.path},custom=true,kind='file',
+        openSource=function()return api.openSource(id)end}
     end
     local edition,label=id:match('^game:([a-z]+):([%w_]+)$')
     local data,err=api.gameData(edition,game);if not data then return nil,err end
@@ -432,9 +326,11 @@ function Library.init(mod)
   end
   function api.currentEdition()return currentEdition()end
   function api.refresh()foreign={};api.revision=api.revision+1 end
-  function api.shutdown()api.pending=false;foreign={} end
-  api.pending=read(root..'/awaiting.txt')=='1'
-  api.discardedPick=read(root..'/awaiting.txt')=='discard'
+  function api.shutdown()if api.picker then api.picker.cancel()end;api.pending=false;foreign={} end
+  function api.attachPicker(picker) api.picker=picker end
+  function api.chooseFile()return api.picker.choose()end
+  function api.poll()return api.picker.poll()end
+  function api.cancelPick()return api.picker.cancel()end
   return api
 end
 return Library

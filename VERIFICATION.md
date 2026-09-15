@@ -1,35 +1,29 @@
-# Bicycle Plus v1.8.0 verification
+# AUTOBIKE+ v1.9.0 verification
 
-## What changed
+## Baseline and reason for stronger tests
 
-This build starts from published v1.7.0 (`ba08de57e2715cb28dae59b3b118cc004b4c62d5`). It adds `song_library.lua` and `music_menu.lua` and modifies `audio.lua`, `audio_menu.lua` and `main.lua`. Eight existing runtime files (the entire colour implementation and automatic mounting) remain byte-for-byte unchanged.
+Starts from public v1.8.0 commit `ff40026074c57b3f5b007e78bbaf718a5c0287de`. The reported import/foreign-song failures were reproduced through **native Sandbox and LegacyCompat**, rather than only loading the mod modules in the host Lua environment. Compatibility writes use a mod-private overlay; native Sources and ChipSynth do not resolve that alias. Native system-picker functions and arbitrary host io reads are also not the same surface inside a mod.
 
 ## Executed local checks
 
-The tests in `verification/v1.8.0` run under Lua 5.3 / texlua against the Lua modules extracted from the supplied v0.2.59 Windows build. Key modules (FilePicker, Music, ChipSynth, Manifest and ModUpdate) were checked by Git blob hash against the v0.2.60 repository and are identical. This is not running a complete v0.2.60 executable.
+Under texlua/Lua 5.3 using the supplied v0.2.59 runtime source:
 
-- Library tests: bounded imports, byte deduplication, rename/remove, persistence, corrupt index fallback, missing files, safe-mode rejection, native pick markers and cross-game cache validation.
-- Cross-platform picker tests: actual engine FilePicker branches for Windows, macOS and Linux with dialog/process responses simulated; native mobile capability and completion contracts; no-shell fallbacks for NX/UWP/unknown builds; nested inbox browsing and path rejection.
-- Audio tests: actual Music and hook/event modules, with audio Sources and device boundaries simulated. All 64 area/bike level combinations, filters, modes, dismount, battle, fanfare, device-suspension state, restart/resume, preview, missing/failed file fallback and cleanup. Executed for all six edition contexts.
-- Menu tests: actual Screens/StateStack, with software graphics and selected services mocked. Choosing tracks, rename/remove confirmation, saved-setting isolation, inbox fallback, help and file-drop ownership. Executed for all six contexts.
-- Native Audio/OptionsMenu integration: both normal and cycling BIKE SONG openers, without duplicate rows, for all six editions.
-- Native manifest/updater metadata: retained ID/repository, game/API declarations, version ordering and exact preferred ZIP name. No actual end-user network update is claimed.
-- Optional ROM test: native ROM audio extraction and ChipSynth with the six separately supplied ROMs. 425 track starts rendered (512 stereo frames each), plus 36 current/selected game pairings with 2,048-frame exact PCM comparisons and active-game bank rechecks. The short silent starts are reported, not treated as proof of a fully audible complete song. No ROM bytes or generated audio are included in the ZIP or source-update archive.
+- Actual Sandbox/LegacyCompat/ImportAccess: reproduce the old path failure, then verify scoped cache writes and FileData playback resolution; cold library reload, legacy index/track recovery, ID deduplication, rename/removal, safe-mode rejection and protected progress/options/other-mod sentinels.
+- Actual FilePicker/RomImporter code with simulated OS responses: Windows/macOS/Linux path handling and bounded reads, Android/iOS direct required-import dispatch, matching completion and cancellation, no obsolete ROM-destination fallback, late cancelled callbacks and picker-less fallback.
+- Actual Screens/StateStack/OptionsMenu: six contexts, native Audio unmodified, one AUTOBIKE+ root entry, AUTO BIKE first, exact cycling menu ordering, one song route, tap-only navigation, confirmed reset interface retained, migration isolation, single-line scrolling and text bounds/overlap checks.
+- Actual Music/Hooks/Events with software audio Sources: all 64 area/cycling volume combinations, filters, dismount, battle, fanfare, pause/resume, preview, missing/corrupt-file fallback and cleanup across six edition contexts.
+- Optional private six-ROM run: 425 track starts (512 stereo frames each), 36 current/selected-game pairings with exact 2,048-frame PCM comparisons and active-game bank rechecks, now with the library executing inside the real mod sandbox. No ROMs, extracted banks or generated soundtrack audio are committed.
 
-Recorded local results are in `verification/v1.8.0/results`. The publishing workflow is configured to repeat the non-ROM checks against pinned v0.2.60 source. Until that workflow actually runs, its success must not be assumed.
+## Publication gate
 
-## Packaging
+The workflow repeats the non-ROM checks against upstream v0.2.60 commit `4dadfd55a88e796c15fa7549b7c56e60e7c9b6d5`.
 
-The build script validates a source allowlist, runtime SHA-256 values, unchanged baseline Git hashes, manifest/update metadata and ZIP round-trip/CRC checks. `.modkit/pack.json` records per-file integrity; SHA256SUMS.txt covers the installable archive. Neither original audio files nor test ROMs are packaged.
+It also runs a real Linux **LÖVE/PhysFS/FileData/OpenAL** test. Short synthetic tones are generated by ffmpeg as WAV, MP3, Ogg Vorbis and FLAC. The actual sandboxed library imports and decodes them, starts streaming Sources, seeks/restarts, releases/reopens from persisted cache, rejects malformed input, reproduces the old alias failure and checks native foreign-bank visibility. OpenAL uses null output: this is real decoder/API execution, **not a speaker/listening test**. Test-generated tone files are not included in the mod.
 
-## Not established by these checks
+The release builder verifies an explicit runtime hash list, unchanged-module hashes, updater metadata, source-only allowlist and ZIP integrity. Publication is conditional on successful tests; a separate download/checksum comparison verifies the released asset. Consult Actions for the actual gate outcome, rather than treating a configured job as an executed pass.
 
-No physical Android/iOS/Desktop/console file dialog or full hardware gameplay session was run here. Operating-system picker permissions, audio-device codecs/drivers, actual user-file decoding, controllers/touch drivers and every companion-mod combination remain device-test items. Mocked decoding is not labelled a real MP3/FLAC decode test; generated PCM is not labelled a listening test. Future engine changes may require adaptation despite the open minimum-version declaration.
+## Limitations and safety
 
-## Pre-publication safety review
+No physical phone/console file picker, OS permission prompt, GPU/driver or complete gameplay session was run here. Platform-routing doubles do not prove every native picker succeeds. Linux codec success does not certify all platform builds. Short ROM synthesis is not full-song listening. Tests do not guarantee all future engine/companion-mod combinations.
 
-The custom-music code has no progress-save writer, save-format migration, ROM patch or active-game switch. Song choices use the existing options-only writer. Imported tracks, alternating index files and foreign sound-program copies use `mod_data/bicycle_plus/music`; native picking uses only this mod's separate temporary destination and matching completion flags. Original user-selected files are read, not deleted.
-
-The added `check_safety.lua` guards every mocked filesystem write/delete/directory creation, with protected progress-save, global-options, original-audio, ROM/save/mod-staging and unrelated-mod sentinels. Import, rename, remove, malformed-index/path rejection and interrupted-index recovery passed without changing those sentinels. This is a software-boundary test, not a disk/power-loss or physical-device guarantee. The library/index and all six audio-context tests were repeated before publication.
-
-There is no identified direct progress-save corruption path in this review, but a mod crash, host bug, exhausted storage or interrupted host save cannot be ruled out. Importing a large file uses bounded memory and disk space. Back up/export saves and save current progress before trying new features. The release is intentionally offered through ordinary Update All with a prominent testing notice; new custom songs are not selected automatically.
+New persistent writes are confined to the engine-provided mod cache, existing options writer and own generated native staging/cleanup paths. Original audio files, ROMs and progress-save records are not rewritten by the new library. Legacy library data is not deleted during recovery. Back up progress and save before importing; crashes can lose unsaved progress and storage exhaustion remains possible.

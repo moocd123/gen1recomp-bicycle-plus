@@ -77,6 +77,24 @@ function UI.init(mod)
   U.border(r[1],r[2],r[3],r[4]);U.text(s,r[1]+math.floor((r[3]-U.width(s))/2),r[2]+math.floor((r[4]-7)/2))
  end
  function U.hit(x,y,r)return type(x)=='number'and type(y)=='number'and x>=r[1]and x<r[1]+r[3]and y>=r[2]and y<r[2]+r[4]end
+ function U.tapDirection(self)
+  for _,key in ipairs({'up','down','left','right'})do
+   if self.game.input:wasPressed(key)then return key end
+  end
+ end
+ function U.marquee(s,x,y,columns,timer)
+  s=tostring(s or ''):upper():gsub('[^A-Z0-9 :/#%.%+%-]',' ')
+  if #s<=columns then U.text(s,x,y);return end
+  local span=#s-columns
+  local travel=span/5
+  local t=(timer or 0)%(2*travel+2.4)
+  local offset
+  if t<1.2 then offset=0
+  elseif t<1.2+travel then offset=math.floor((t-1.2)*5)
+  elseif t<2.4+travel then offset=span
+  else offset=math.max(0,span-math.floor((t-2.4-travel)*5))end
+  U.text(s:sub(offset+1,offset+columns),x,y)
+ end
  function U.direction(self,dt)
   local input=self.game.input
   for _,k in ipairs({'up','down','left','right'})do
