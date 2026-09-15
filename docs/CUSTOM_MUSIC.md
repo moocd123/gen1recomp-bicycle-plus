@@ -4,7 +4,9 @@ The only menu route is **OPTIONS → AUTOBIKE+ → BIKE AUDIO → BIKE SONG**. S
 
 MP3, Ogg Vorbis, WAV and FLAC are accepted when the host decoder can read them, up to 64 MiB and 128 imports. Invalid files report a short error; any long title/error scrolls on one line. Local copies can be previewed, selected, renamed or removed with confirmation. Original user-selected files are not deleted. Some native bridges omit the filename; those imports have generated names that can be renamed.
 
-The cycling track has its own volume and filter. OFF on cycling AREA VOLUME gives bike-only music; OFF on CYCLING MUSIC VOLUME gives area-only. Both above OFF gives a mix. Normal/off-bike Music and SFX remain in the game's unmodified Audio menu. SAME inherits normal settings. ON MOUNT controls restart/resume within the current session.
+The cycling track has its own volume and filter. **BIKE AUDIO → ON BIKE: AREA / BICYCLE / BOTH** selects the audible tracks without changing those preferences. Both uses the saved area/bicycle gains; OFF still means a channel is silent. Dismounting restores normal/off-bike Music and SFX from the game's unmodified Audio menu. SAME inherits normal settings. ON MOUNT controls restart/resume within the current session.
+
+The selector changes neither the chosen song nor resume behaviour. A stored OFF value from v1.9.0 is retained rather than guessed; raise it once to the desired level if that channel should be heard.
 
 Other-game soundtracks require those supported Pokémon editions already imported in Gen1ReComp++. The app's read-only audio metadata and program banks are used without launching/switching games. It does not extract soundtracks from arbitrary other games.
 

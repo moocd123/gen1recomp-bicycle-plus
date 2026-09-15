@@ -16,7 +16,7 @@ return function(mod)
     bike_centres_colour=true, bike_tyres_colour=true, bike_frame_colour=true, bike_handlebars_colour=true}
   local spellingChoices = {{"ENGLISH UK", "uk"}, {"ENGLISH US", "us"}}
   local filterChoices = {{"OFF", 0}, {"1X", 1}, {"2X", 2}, {"3X", 3}}
-  local ridingMusicChoices = {{"BICYCLE", "bicycle"}, {"AREA", "area"}, {"BOTH", "both"}}
+  local ridingMusicChoices = {{"AREA", "area"}, {"BICYCLE", "bicycle"}, {"BOTH", "both"}}
   local ridingFilterChoices = {{"SAME", -1}, {"OFF", 0}, {"1X", 1}, {"2X", 2}, {"3X", 3}}
   local ridingVolumeChoices = {{"SAME", -1}, {"OFF", 0}, {"1", 1}, {"2", 2},
     {"3", 3}, {"4", 4}, {"5", 5}, {"6", 6}, {"7", 7}}
@@ -84,6 +84,8 @@ return function(mod)
         default="original", choices=choicesFor("bike_frame_colour")},
       {key="bike_handlebars_colour", type="choice", label="HANDLEBARS " .. colourWord(),
         default="original", choices=choicesFor("bike_handlebars_colour")},
+      {key="riding_music", type="choice", label="MUSIC ON BIKE", default="both",
+        choices=ridingMusicChoices},
       {key="bike_volume", type="number", label="BIKE VOLUME", default=7,
         min=0, max=7, step=1},
       {key="riding_area_volume", type="choice", label="RIDING AREA VOL", default=-1,
@@ -152,20 +154,21 @@ return function(mod)
     return true
   end
 
-  -- Old AREA/BICYCLE/BOTH preferences become independent native-scale gains.
-  -- Retain the old keys as migration history, but never consume them at runtime.
+  -- Routing and gain are independent. Never turn a stored volume down just
+  -- because the player chooses not to hear that track for the current ride.
   local function migrateAudio(game)
     if Runtime.safeMode or not (game and game.save and game.save.options and game.mods) then return end
     local o=game.save.options;o.modOptions=o.modOptions or {};game.mods.modOptions=game.mods.modOptions or {}
     local saved=o.modOptions[mod.id] or {};local live=game.mods.modOptions[mod.id] or {}
-    if saved._audio_layout==3 or live._audio_layout==3 then return end
-    local old=live.riding_music or saved.riding_music or live.music_mode or saved.music_mode
-    local function put(k,v) saved[k]=v;live[k]=v end
-    -- Replace the redundant mode switch with explicit cycling volumes.
-    -- The normal game's Music/SFX preferences are never rewritten.
-    if old=='bicycle' or old=='cycling' then put('riding_area_volume',0)
-    elseif old=='area' then put('bike_volume',0) end
-    put('riding_music','both');put('_audio_layout',3)
+    if (tonumber(saved._audio_layout) or 0)>=4 or (tonumber(live._audio_layout) or 0)>=4 then return end
+    local mode=live.riding_music or saved.riding_music or live.music_mode or saved.music_mode
+    if mode=='cycling' then mode='bicycle' end
+    if not allowed(ridingMusicChoices,mode) then mode='both' end
+    -- v1.9.0 stored BOTH and explicit zero volumes. Keep those values exactly:
+    -- it did not retain the previous gains, so guessing would overwrite user edits.
+    -- Direct upgrades from earlier versions retain their saved routing choice.
+    saved.riding_music,live.riding_music=mode,mode
+    saved._audio_layout,live._audio_layout=4,4
     o.modOptions[mod.id],game.mods.modOptions[mod.id]=saved,live
     if game.writeOptions then game:writeOptions() end
   end

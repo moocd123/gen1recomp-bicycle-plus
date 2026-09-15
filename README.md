@@ -2,15 +2,15 @@
 
 Formerly **Bicycle Plus**. The displayed name changes; the internal `bicycle_plus` ID, repository, update source and saved preferences remain compatible.
 
-**v1.9.0 — audio/import repair and simplified menus.**
+**v1.9.1 — quick music selector restored without changing your mix.**
 
 [Latest release](https://github.com/moocd123/gen1recomp-bicycle-plus/releases/latest) · [Issues](https://github.com/moocd123/gen1recomp-bicycle-plus/issues)
 
 ## Updating
 
-Use **MODS → Check for updates → Update All** from Bicycle Plus v1.4.2 or newer. Confirm **AUTOBIKE+ 1.9.0**, then **fully close and reopen the app** to clear any old audio-menu hooks.
+Use **MODS → Check for updates → Update All** from Bicycle Plus v1.4.2 or newer. Confirm **AUTOBIKE+ 1.9.1**, then **fully close and reopen the app** to clear any old audio-menu hooks.
 
-New/manual installs use **bicycle_plus-1.9.0.zip**, left zipped. Import it through MODS and enable the games you play. The filename retains the old ID for the updater. Do not import GitHub's Source code ZIP. v1.4.0/v1.4.1 users need one manual replacement to add the update source. Do not delete saves or app data.
+New/manual installs use **bicycle_plus-1.9.1.zip**, left zipped. Import it through MODS and enable the games you play. The filename retains the old ID for the updater. Do not import GitHub's Source code ZIP. v1.4.0/v1.4.1 users need one manual replacement to add the update source. Do not delete saves or app data.
 
 Back up your progress before testing. Automated checks do not guarantee every device, native file dialog or mod combination. No ROMs or soundtrack files are included.
 
@@ -32,6 +32,7 @@ The game's original **Audio menu is not modified**. Its **Music volume, SFX volu
 
 The private **BIKE AUDIO** page has, in order:
 
+- **ON BIKE: AREA / BICYCLE / BOTH** — choose which tracks play without changing any saved volume, filter or song.
 - **AREA VOLUME / AREA FILTER** — the location's music while cycling.
 - **SFX VOLUME / SFX FILTER** — sound effects while cycling.
 - **CYCLING MUSIC VOLUME / CYCLING MUSIC FILTER** — the selected bicycle song.
@@ -40,7 +41,9 @@ The private **BIKE AUDIO** page has, in order:
 
 Volumes are OFF–7. Filters are OFF/1X/2X/3X. Area/SFX cycling settings also offer SAME to follow their normal counterparts. Dismounting restores normal settings.
 
-There is no separate AREA/BICYCLE/BOTH switch. For bicycle-only music, set cycling **AREA VOLUME to OFF**. For area-only music, set **CYCLING MUSIC VOLUME to OFF**. Set both above OFF to mix them. Normal Music volume remains independent, so turning cycling area music off does not silence walking music. Older mix modes are converted into equivalent cycling volumes once; normal engine settings are not rewritten.
+**ON BIKE** is an independent routing switch. **AREA** plays only the location track; **BICYCLE** plays only your selected bicycle song; **BOTH** mixes them using your saved gains and filters. Suppressing a track does not turn its saved slider to zero. Dismounting still restores normal Music/SFX settings, regardless of the routing choice. A track whose saved volume is OFF remains silent even when selected.
+
+Direct upgrades from v1.8.0 or earlier retain their old AREA/BICYCLE/BOTH choice and saved mix. **v1.9.0 already converted modes to zero volumes and did not store the previous gains.** Those values cannot be reliably reconstructed. This update leaves them alone: adjust an affected OFF slider once to your preferred level, then switch modes without changing it again. No normal Music/SFX preferences are overwritten.
 
 ## Bike song and importing
 

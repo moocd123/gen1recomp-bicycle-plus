@@ -5,6 +5,17 @@ function Menu.init(mod,config)
   local get,set=config.getSetting,config.setSetting
   local api={}
   local filters={'OFF','1X','2X','3X'}
+  local modes={'area','bicycle','both'}
+  local function musicMode()
+    return {label='ON BIKE',key='riding_music',value=function()
+      return get('riding_music'):upper()
+    end,step=function(d,s)
+      local current=get('riding_music');local at=3
+      for i,mode in ipairs(modes) do if current==mode then at=i;break end end
+      -- Change only routing; saved gains, filters, song and resume stay intact.
+      set(s.game,'riding_music',modes[(at-1+d)%#modes+1])
+    end}
+  end
   local function row(key,label,maximum,inherit)
     local low=inherit and -1 or 0
     return {label=label,key=key,value=function()
@@ -21,6 +32,7 @@ function Menu.init(mod,config)
   end
   function api.rows()
     return {
+      musicMode(),
       row('riding_area_volume','AREA VOLUME',7,true),
       row('riding_area_filter','AREA FILTER',3,true),
       row('riding_sfx_volume','SFX VOLUME',7,true),

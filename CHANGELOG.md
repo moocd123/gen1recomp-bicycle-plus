@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.9.1 — Restore the quick cycling-music selector
+
+- Add ON BIKE: AREA / BICYCLE / BOTH at the top of BIKE AUDIO.
+- Preserve every saved volume, filter, song and restart/resume choice when switching modes.
+- Replace destructive mode-to-volume migration with routing-only migration.
+- Preserve direct upgrades from older mode-based versions and do not guess gains already overwritten by v1.9.0.
+- Keep native Audio unmodified, AUTO BIKE first, one Bike Song path and tap-only settings navigation.
+- Add regression checks for migration, mode switching, mix preservation, native menu isolation and all six audio contexts.
+
 ## 1.9.0 — AUTOBIKE+ rebrand and music repair
 
 - Display name AUTOBIKE+; keep update identity, repository and saved keys.

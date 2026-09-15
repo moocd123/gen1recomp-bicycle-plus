@@ -5,19 +5,19 @@ from zipfile import ZipFile, ZipInfo, ZIP_DEFLATED
 import hashlib
 import json
 ROOT=Path(__file__).resolve().parents[2]
-VERSION='1.9.0'
+VERSION='1.9.1'
 def sha(data): return hashlib.sha256(data).hexdigest()
 def main():
     manifest=json.loads((ROOT/'manifest.json').read_text())
     assert (manifest['id'],manifest['name'],manifest['version'],manifest['api'],manifest['entry'])==('bicycle_plus','AUTOBIKE+',VERSION,2,'main.lua')
     assert manifest['game_version']=='>=0.2.59' and manifest['github']=='moocd123/gen1recomp-bicycle-plus'
     assert set(manifest['games'])=={'red','blue','yellow','gold','silver','crystal'}
-    hashes=json.loads((ROOT/'verification/v1.9.0/runtime-sha256.json').read_text())
+    hashes=json.loads((ROOT/'verification/v1.9.1/runtime-sha256.json').read_text())
     runtime=hashes['runtime']; assert len(runtime)==15
-    docs=['README.md','LICENSE','CHANGELOG.md','COMPATIBILITY.md','VERIFICATION.md','RELEASE_NOTES_v1.9.0.md','docs/CUSTOM_MUSIC.md']
+    docs=['README.md','LICENSE','CHANGELOG.md','COMPATIBILITY.md','VERIFICATION.md','RELEASE_NOTES_v1.9.1.md','docs/CUSTOM_MUSIC.md']
     files={name:(ROOT/name).read_bytes() for name in sorted(set(runtime)|set(docs)|{'manifest.json'})}
     for name,digest in runtime.items(): assert sha(files[name])==digest, name
-    for name,digest in hashes['unchanged_from_v1_8'].items(): assert sha(files[name])==digest, name
+    for name,digest in hashes['unchanged_from_v1_9'].items(): assert sha(files[name])==digest, name
     metadata={'modkit':'1.0.0','packed_at':'2026-09-15T00:00:00Z','id':'bicycle_plus','version':VERSION,'api':2,'engine_range':manifest['game_version'],
               'files':[{'path':n,'bytes':len(d),'sha256':sha(d)} for n,d in sorted(files.items())]}
     files['.modkit/pack.json']=(json.dumps(metadata,indent=2)+'\n').encode()
