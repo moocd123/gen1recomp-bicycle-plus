@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.9.2 — First-install defaults
+
+- Default to AUTO BIKE ON, BICYCLE routing and the original bicycle theme.
+- Initialise only a missing bicycle volume from normal Music once, retaining OFF.
+- Preserve saved mode, auto-bike choice, volume, filters and all unrelated preferences on update/reinstall.
+- Read raw saved/live stores before option-schema fallbacks; initialise when game options are ready.
+- Keep AREA/BICYCLE/BOTH independent from volume/filter choices.
+- Only main.lua changes at runtime; playback, file importing, colours and movement modules are unchanged.
+
 ## 1.9.1 — Restore the quick cycling-music selector
 
 - Add ON BIKE: AREA / BICYCLE / BOTH at the top of BIKE AUDIO.

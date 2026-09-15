@@ -2,17 +2,25 @@
 
 Formerly **Bicycle Plus**. The displayed name changes; the internal `bicycle_plus` ID, repository, update source and saved preferences remain compatible.
 
-**v1.9.1 — quick music selector restored without changing your mix.**
+**v1.9.2 — sensible first-install defaults; existing preferences retained.**
 
 [Latest release](https://github.com/moocd123/gen1recomp-bicycle-plus/releases/latest) · [Issues](https://github.com/moocd123/gen1recomp-bicycle-plus/issues)
 
 ## Updating
 
-Use **MODS → Check for updates → Update All** from Bicycle Plus v1.4.2 or newer. Confirm **AUTOBIKE+ 1.9.1**, then **fully close and reopen the app** to clear any old audio-menu hooks.
+Use **MODS → Check for updates → Update All** from Bicycle Plus v1.4.2 or newer. Confirm **AUTOBIKE+ 1.9.2**, then **fully close and reopen the app** to clear any old audio-menu hooks.
 
-New/manual installs use **bicycle_plus-1.9.1.zip**, left zipped. Import it through MODS and enable the games you play. The filename retains the old ID for the updater. Do not import GitHub's Source code ZIP. v1.4.0/v1.4.1 users need one manual replacement to add the update source. Do not delete saves or app data.
+New/manual installs use **bicycle_plus-1.9.2.zip**, left zipped. Import it through MODS and enable the games you play. The filename retains the old ID for the updater. Do not import GitHub's Source code ZIP. v1.4.0/v1.4.1 users need one manual replacement to add the update source. Do not delete saves or app data.
 
 Back up your progress before testing. Automated checks do not guarantee every device, native file dialog or mod combination. No ROMs or soundtrack files are included.
+
+## First-install defaults
+
+With no saved AUTOBIKE+ preferences, **AUTO BIKE is ON**, **ON BIKE is BICYCLE**, and **BIKE SONG is the original bicycle theme**. A missing bicycle-volume setting is initialised from the game's current **Music volume**, including OFF. This is copied once when the game and its options are ready, then saved as the independent cycling volume. If Music volume is absent, the native default of 7 is used.
+
+A saved bike volume always wins, including zero. Updates and reinstalls with retained preferences do not reset previously chosen AREA/BICYCLE/BOTH, auto-bike OFF, filters, colours, imported songs or resume behaviour. Reinstalling after deleting all app settings cannot recover preferences that no longer exist.
+
+Example: a new user with Music volume 3 starts with bicycle volume 3. Changing normal Music to 6 later does not change that saved bicycle volume. They can choose AREA or BOTH and adjust volumes/filters at any time; mode changes leave the mix alone.
 
 ## One settings menu
 

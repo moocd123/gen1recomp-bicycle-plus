@@ -26,7 +26,7 @@ return function(mod)
   local defaults = {bike_song="original", bike_song_resume=false, auto_mount=true, bike_volume=7, bike_filter=0,
     sfx_filter=0, bike_colour="original", bike_stripes_colour="original",
     bike_centres_colour="original", bike_tyres_colour="original", bike_frame_colour="original", bike_handlebars_colour="original",
-    spelling="uk", riding_music="both",
+    spelling="uk", riding_music="bicycle",
     riding_area_volume=-1, riding_area_filter=-1, riding_sfx_volume=-1, riding_sfx_filter=-1}
   local function allowed(choices, value)
     for _, choice in ipairs(choices) do if choice[2] == value then return true end end
@@ -45,7 +45,7 @@ return function(mod)
     end
     if key == "spelling" and not allowed(spellingChoices,v) then return "uk" end
     if colourKeys[key] then return Hardware.canonical(v) or "original" end
-    if key == "riding_music" and not allowed(ridingMusicChoices,v) then return "both" end
+    if key == "riding_music" and not allowed(ridingMusicChoices,v) then return "bicycle" end
     if ridingOverrides[key] then
       return math.max(-1, math.min(ridingOverrides[key], math.floor(tonumber(v) or -1)))
     end
@@ -84,7 +84,7 @@ return function(mod)
         default="original", choices=choicesFor("bike_frame_colour")},
       {key="bike_handlebars_colour", type="choice", label="HANDLEBARS " .. colourWord(),
         default="original", choices=choicesFor("bike_handlebars_colour")},
-      {key="riding_music", type="choice", label="MUSIC ON BIKE", default="both",
+      {key="riding_music", type="choice", label="MUSIC ON BIKE", default="bicycle",
         choices=ridingMusicChoices},
       {key="bike_volume", type="number", label="BIKE VOLUME", default=7,
         min=0, max=7, step=1},
@@ -154,21 +154,37 @@ return function(mod)
     return true
   end
 
-  -- Routing and gain are independent. Never turn a stored volume down just
-  -- because the player chooses not to hear that track for the current ride.
+  -- First-run defaults are resolved from raw stores, not options:get (which
+  -- substitutes schema defaults). Keep explicit zero/false and prior choices.
+  -- Copy Music volume once; later changes to Music must not retune the bike.
   local function migrateAudio(game)
     if Runtime.safeMode or not (game and game.save and game.save.options and game.mods) then return end
     local o=game.save.options;o.modOptions=o.modOptions or {};game.mods.modOptions=game.mods.modOptions or {}
     local saved=o.modOptions[mod.id] or {};local live=game.mods.modOptions[mod.id] or {}
-    if (tonumber(saved._audio_layout) or 0)>=4 or (tonumber(live._audio_layout) or 0)>=4 then return end
-    local mode=live.riding_music or saved.riding_music or live.music_mode or saved.music_mode
-    if mode=='cycling' then mode='bicycle' end
-    if not allowed(ridingMusicChoices,mode) then mode='both' end
-    -- v1.9.0 stored BOTH and explicit zero volumes. Keep those values exactly:
-    -- it did not retain the previous gains, so guessing would overwrite user edits.
-    -- Direct upgrades from earlier versions retain their saved routing choice.
+    if (tonumber(saved._audio_layout) or 0)>=5 or (tonumber(live._audio_layout) or 0)>=5 then return end
+    local function stored(key)
+      if live[key]~=nil then return live[key] end
+      return saved[key]
+    end
+    local mode=stored("riding_music") or stored("music_mode")
+    if mode=="cycling" then mode="bicycle" end
+    if not allowed(ridingMusicChoices,mode) then mode="bicycle" end
+    local volume=stored("bike_volume")
+    if volume==nil then
+      local music=o.musicVol
+      if music==nil and game.options then music=game.options.musicVol end
+      music=tonumber(music)
+      if not music or music~=music or music==math.huge or music==-math.huge then music=7 end
+      volume=math.max(0,math.min(7,math.floor(music)))
+    end
+    local auto=stored("auto_mount")
+    if auto==nil then auto=true end
+    -- Updates/reinstalls keep existing values, including OFF. v1.9.0's zeroed
+    -- sliders cannot be reconstructed and are never raised by this migration.
     saved.riding_music,live.riding_music=mode,mode
-    saved._audio_layout,live._audio_layout=4,4
+    saved.bike_volume,live.bike_volume=volume,volume
+    saved.auto_mount,live.auto_mount=auto,auto
+    saved._audio_layout,live._audio_layout=5,5
     o.modOptions[mod.id],game.mods.modOptions[mod.id]=saved,live
     if game.writeOptions then game:writeOptions() end
   end

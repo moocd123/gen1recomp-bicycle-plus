@@ -1,4 +1,4 @@
-# AUTOBIKE+ v1.9.1 compatibility
+# AUTOBIKE+ v1.9.2 compatibility
 
 The displayed name changes from Bicycle Plus to AUTOBIKE+. `id=bicycle_plus`, the GitHub update source, six editions, `api=2` and `game_version=>=0.2.59` remain intact. The repository is deliberately not renamed so existing installations continue to receive releases.
 
@@ -13,3 +13,9 @@ Colour geometry, hand/handlebar masks, trainer rendering and automatic mounting 
 See VERIFICATION.md. Real Linux LÖVE decoder tests use null output; OS dialogs on other platforms and physical gameplay remain device-test items. Future engine changes can require fixes despite the open version declaration.
 
 For v1.9.1, only main.lua (option registration/non-destructive migration) and audio_menu.lua (selector row) change at runtime. The other 13 runtime files, including the repaired audio engine, song library, importing and appearance implementation, are byte-for-byte identical to v1.9.0.
+
+## v1.9.2 default initialisation
+
+Only `main.lua` changes from v1.9.1. The other 14 runtime modules are byte-for-byte unchanged. Initialisation uses the actual stored options, not schema fallback values, so an existing zero volume or false auto-bike flag is retained. When no bicycle volume was saved, normal Music is copied once after the game options exist. The options-only writer persists these preferences; no new progress-save writer, ROM migration or library operation is added.
+
+The default routing for a missing/invalid mode is now BICYCLE. Valid stored AREA/BICYCLE/BOTH choices and the legacy cycling alias remain supported. A retained OFF value from v1.9.0 is still respected, not silently raised.
