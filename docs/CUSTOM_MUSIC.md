@@ -15,3 +15,11 @@ New library storage is **mod_cache/bicycle_plus/music**, outside the replaced mo
 Windows/macOS/Linux use the engine's desktop picker and bounded external-file reader. Current Android/iOS required-import bridges stage into a unique own-mod temporary path. Only matching completions are consumed. Late cancelled results are ignored/cleaned rather than assigned to a new request. The fallback browser only sees host-permitted storage; native OS capability cannot be invented by a Lua mod.
 
 Up/Down selects, A activates, B/Start returns; lists allow Left/Right page jumps. These are press-edge actions, not held-repeat scrolling. Mouse/touch also works. Song names bounce-scroll horizontally rather than wrap. The rename screen retains its on-screen keypad and keyboard entry.
+
+## Mobile return handling (v1.9.3)
+
+After you select a file, AUTOBIKE+ accepts the app's direct per-request delivery or its older required-import staging file. It validates a completed/stable file before adding it to Imported Songs, selects a successful import, and clears the pending status. No extra import submenu is required.
+
+When returning without a result, press **IMPORT SONG** again to retry. That no longer leaves the menu permanently locked behind “finish or cancel the current import.” A silent request also expires after active waiting. A native error or undecodable file is reported rather than silently accepted. If the engine has an unrelated dependency import waiting, finish that in the launcher before starting another picker.
+
+Restart the app after updating so the new pending-file handler replaces the old one. A persisted AUTOBIKE+ request and its returned file can be recovered when the mod starts again. Existing local songs and other-game soundtracks are not changed by this repair.

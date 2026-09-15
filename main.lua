@@ -80,8 +80,6 @@ return function(mod)
         default="original", choices=choicesFor("bike_centres_colour")},
       {key="bike_tyres_colour", type="choice", label="EDGE " .. colourWord(),
         default="original", choices=choicesFor("bike_tyres_colour")},
-      {key="bike_frame_colour", type="choice", label="DETAILS " .. colourWord(),
-        default="original", choices=choicesFor("bike_frame_colour")},
       {key="bike_handlebars_colour", type="choice", label="HANDLEBARS " .. colourWord(),
         default="original", choices=choicesFor("bike_handlebars_colour")},
       {key="riding_music", type="choice", label="MUSIC ON BIKE", default="bicycle",
@@ -117,6 +115,7 @@ return function(mod)
   local currentGame, migrateSettings
 
   local function setSetting(game, key, value)
+    if key=="bike_frame_colour" then key="bike_handlebars_colour" end
     if Runtime.safeMode or defaults[key] == nil then return false end
     if migrateSettings then migrateSettings(game) end
     if key == "auto_mount" then value = value == true end
@@ -211,9 +210,34 @@ return function(mod)
     options.modOptions[mod.id],game.mods.modOptions[mod.id]=saved,live
     if game.writeOptions then game:writeOptions() end
   end
+  -- Merge only the paint control, not artwork geometry. Existing custom
+  -- handlebars win; otherwise keep an older custom Details accent. Raw old
+  -- keys are retained for rollback and never used as separate live paint.
+  local function migrateHandlebars(game)
+    if Runtime.safeMode or not(game and game.mods and game.save and game.save.options)then return end
+    local o=game.save.options;o.modOptions=o.modOptions or {};game.mods.modOptions=game.mods.modOptions or {}
+    local saved=o.modOptions[mod.id]or{};local live=game.mods.modOptions[mod.id]or{}
+    if saved._handlebars_layout==1 or live._handlebars_layout==1 then return end
+    local function old(key)
+      local v=live[key];if v==nil then v=saved[key]end
+      return Hardware.canonical(v)
+    end
+    local bars,detail=old('bike_handlebars_colour'),old('bike_frame_colour')
+    local chosen=bars and bars~='original' and bars or detail and detail~='original' and detail or bars or 'original'
+    saved.bike_handlebars_colour,live.bike_handlebars_colour=chosen,chosen
+    if not old('bike_handlebars_colour_custom') then
+      local memory=old('bike_frame_colour_custom')
+      if memory and memory~='original' then saved.bike_handlebars_colour_custom=memory;live.bike_handlebars_colour_custom=memory end
+    end
+    saved._handlebars_layout,live._handlebars_layout=1,1
+    o.modOptions[mod.id],game.mods.modOptions[mod.id]=saved,live
+    if game.writeOptions then game:writeOptions()end
+    defineOptions()
+  end
   migrateSettings=function(game)
     migrateAudio(game)
     migrateColours(game)
+    migrateHandlebars(game)
   end
   local UI = module("colour_ui").init(mod)
   local menus = module("settings_menu").init(mod,UI)
@@ -303,7 +327,7 @@ return function(mod)
     currentGame=game
     dropState.game=game
     if songs.picker and songs.picker.hasWork() then
-      local row,err=songs.poll()
+      local row,err=songs.poll(dt)
       if row or err then songs.lastImport={row=row,error=err} end
     end
     migrateSettings(game)

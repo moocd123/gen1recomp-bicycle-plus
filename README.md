@@ -2,15 +2,15 @@
 
 Formerly **Bicycle Plus**. The displayed name changes; the internal `bicycle_plus` ID, repository, update source and saved preferences remain compatible.
 
-**v1.9.2 — sensible first-install defaults; existing preferences retained.**
+**v1.9.3 — mobile import completion and combined handlebars.**
 
 [Latest release](https://github.com/moocd123/gen1recomp-bicycle-plus/releases/latest) · [Issues](https://github.com/moocd123/gen1recomp-bicycle-plus/issues)
 
 ## Updating
 
-Use **MODS → Check for updates → Update All** from Bicycle Plus v1.4.2 or newer. Confirm **AUTOBIKE+ 1.9.2**, then **fully close and reopen the app** to clear any old audio-menu hooks.
+Use **MODS → Check for updates → Update All** from Bicycle Plus v1.4.2 or newer. Confirm **AUTOBIKE+ 1.9.3**, then **fully close and reopen the app** to clear any old audio-menu hooks.
 
-New/manual installs use **bicycle_plus-1.9.2.zip**, left zipped. Import it through MODS and enable the games you play. The filename retains the old ID for the updater. Do not import GitHub's Source code ZIP. v1.4.0/v1.4.1 users need one manual replacement to add the update source. Do not delete saves or app data.
+New/manual installs use **bicycle_plus-1.9.3.zip**, left zipped. Import it through MODS and enable the games you play. The filename retains the old ID for the updater. Do not import GitHub's Source code ZIP. v1.4.0/v1.4.1 users need one manual replacement to add the update source. Do not delete saves or app data.
 
 Back up your progress before testing. Automated checks do not guarantee every device, native file dialog or mod combination. No ROMs or soundtrack files are included.
 
@@ -28,7 +28,7 @@ Open **OPTIONS → AUTOBIKE+**:
 
 1. **AUTO BIKE** — toggle automatic mounting on entry to an eligible area while carrying a Bicycle. Deliberate dismounting is remembered for the visit.
 2. **SFX FILTER** — normal/off-bike sound-effect filter.
-3. **BIKE APPEARANCE** — the existing six-part Original/Custom colour editor and confirmed Reset Colours.
+3. **BIKE APPEARANCE** — the existing five-part Original/Custom colour editor and confirmed Reset Colours.
 4. **BIKE AUDIO** — cycling settings and the single Bike Song entry.
 5. **LANGUAGE** — UK/US spelling.
 
@@ -77,7 +77,7 @@ On native bridges that do not return the source filename, an imported song recei
 
 ## Appearance
 
-WHEEL, STRIPE, CENTRE, EDGE, DETAILS and HANDLEBARS keep the existing pixel mappings and animated preview. Original preserves the artwork; Custom opens the rainbow/brightness picker with exact RGB and hex entry. Apply saves the draft; Cancel discards it. Reset Colours only resets the six paint settings. Trainer Skins integration and remembered custom colours are retained. Menu selection is now tap-only.
+WHEEL, STRIPE, CENTRE, EDGE and HANDLEBARS keep the existing pixel mappings and animated preview. Original preserves the artwork; Custom opens the rainbow/brightness picker with exact RGB and hex entry. Apply saves the draft; Cancel discards it. Reset Colours only resets the five paint settings. Trainer Skins integration and remembered custom colours are retained. Menu selection is now tap-only.
 
 ## Compatibility and verification
 
@@ -86,3 +86,13 @@ Targets all six games, engine `>=0.2.59`, mod API 2. An open engine range is not
 [VERIFICATION.md](VERIFICATION.md) distinguishes sandbox, software-boundary, real decoder and local-ROM checks from physical-device gameplay testing. This release specifically tests through the native mod sandbox/compat layer, which previous direct-module tests did not cover.
 
 Source is [MIT licensed](LICENSE). Pokémon game content belongs to its respective owners. Unofficial fan mod, not affiliated with Nintendo, Creatures Inc. or GAME FREAK. [Gen1ReComp++](https://github.com/bryanthaboi/gen1recomp).
+
+## v1.9.3 repair notes
+
+**Import Song** still opens the file picker directly. Mobile completion now supports both the current per-request destination and the older `picked_required_import.bin` delivery. The latter does not supply the completion marker the old mod waited for. A returned final file whose marker is missing is also checked. Partial files are not decoded; markerless data must be stable across polls before validation.
+
+A pending import from the previous version can be recovered on reopening the game. When a native picker returns with no selection or callback, **Import Song** can retry rather than permanently reporting that the previous request must finish. A timeout also releases a silent wait. Error messages remain visible in the existing single-line status row. Other importers' staged files and unrelated markers are not consumed.
+
+There are now five appearance controls. **HANDLEBARS includes the former DETAILS pixel(s)** as well as the existing bar region, using the same source masks. No additional hand/clothing pixels are painted. Your saved custom handlebar colour takes precedence; if that was Original and Details had a custom colour, the merged control starts with the Details colour. Otherwise it remains Original. The two older independent colours cannot both be displayed on one combined control. Historical values are retained for rollback, not exposed as another menu option.
+
+Current/other-game song playback, the original Audio menu, routing, all filters/volumes, auto-bike behaviour and first-install defaults are unchanged. Physical phone picker testing is still needed; see VERIFICATION.md for the exact test boundary.

@@ -329,7 +329,7 @@ function Library.init(mod)
   function api.shutdown()if api.picker then api.picker.cancel()end;api.pending=false;foreign={} end
   function api.attachPicker(picker) api.picker=picker end
   function api.chooseFile()return api.picker.choose()end
-  function api.poll()return api.picker.poll()end
+  function api.poll(dt)return api.picker.poll(dt)end
   function api.cancelPick()return api.picker.cancel()end
   return api
 end

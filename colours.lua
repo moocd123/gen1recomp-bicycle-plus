@@ -1,4 +1,4 @@
--- Bicycle Plus: independent wheel, stripe, centre, edge, detail and handlebar colours.
+-- Bicycle Plus: independent wheel, stripe, centre, edge and combined handlebar colours.
 -- Pixel ownership is classified on the untouched source sheet so trainer
 -- palettes cannot collapse the two wheel shades into one. Rider art stays
 -- outside the verified bicycle masks; other renderers keep their full chain.
@@ -91,7 +91,7 @@ function Colours.init(mod, getSetting, Parts, Hardware)
   end
 
   local partKeys = {rims="bike_colour", stripes="bike_stripes_colour",
-    centres="bike_centres_colour", tyres="bike_tyres_colour", frame="bike_frame_colour", handlebars="bike_handlebars_colour"}
+    centres="bike_centres_colour", tyres="bike_tyres_colour", frame="bike_handlebars_colour", handlebars="bike_handlebars_colour"}
   local partOrder = {"rims", "stripes", "centres", "tyres", "frame", "handlebars"}
   local function settings(rimOverride)
     local choices, active = {}, false

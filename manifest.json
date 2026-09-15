@@ -1,7 +1,7 @@
 {
   "id": "bicycle_plus",
   "name": "AUTOBIKE+",
-  "version": "1.9.2",
+  "version": "1.9.3",
   "api": 2,
   "entry": "main.lua",
   "profile": "content",
@@ -23,6 +23,6 @@
     "engine_internals"
   ],
   "affects_link": false,
-  "description": "Automatic cycling, six-part bike customisation and independent cycling audio with local-file and imported-game songs. Formerly Bicycle Plus.",
+  "description": "Automatic cycling, five-part bike customisation and independent cycling audio with local-file and imported-game songs. Formerly Bicycle Plus.",
   "github": "moocd123/gen1recomp-bicycle-plus"
 }

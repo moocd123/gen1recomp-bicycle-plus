@@ -58,7 +58,7 @@ function Controls.init(mod,config)
     end
     function self:draw()
       UI.background();UI.centre("RESET "..colourWord().."S?",18)
-      UI.centre("ALL SIX BIKE PARTS",40);UI.centre("RETURN TO ORIGINAL",51)
+      UI.centre("ALL FIVE BIKE PARTS",40);UI.centre("RETURN TO ORIGINAL",51)
       UI.centre("OTHER SETTINGS UNCHANGED",66)
       UI.button("CANCEL",buttons[1],self.index==1);UI.button("RESET",buttons[2],self.index==2)
       UI.centre("A:CONFIRM  B:BACK",114);UI.white()
@@ -75,7 +75,6 @@ function Controls.init(mod,config)
         {key="bike_stripes_colour",label=function()return "STRIPE"end},
         {key="bike_centres_colour",label=centreWord},
         {key="bike_tyres_colour",label=function()return "EDGE"end},
-        {key="bike_frame_colour",label=function()return "DETAILS"end},
         {key="bike_handlebars_colour",label=function()return "HANDLEBARS"end},
         {reset=true,label=function()return "RESET "..colourWord().."S"end},
       }}

@@ -1,21 +1,21 @@
-# AUTOBIKE+ v1.9.2 compatibility
+# AUTOBIKE+ v1.9.3 compatibility
 
-The displayed name changes from Bicycle Plus to AUTOBIKE+. `id=bicycle_plus`, the GitHub update source, six editions, `api=2` and `game_version=>=0.2.59` remain intact. The repository is deliberately not renamed so existing installations continue to receive releases.
+The same mod ID `bicycle_plus`, API 2, six-game targets, `>=0.2.59` minimum and GitHub update source are retained. Future breaking engine changes can still require fixes.
 
-The native Audio menu is no longer wrapped. The music/profile implementation still makes normal Music controls apply to area/normal music and uses a separate cycling gain. Off-bike SFX filtering is configured in AUTOBIKE+, not native Audio. AREA/BICYCLE/BOTH is again a separate routing setting. Mode changes never edit gain/filter values. Direct upgrades preserve the older choice; v1.9.0 zero-volume values are retained because their previous levels were not backed up. Colours and normal engine volume/filter preferences are retained.
+Five runtime modules change: `import_picker.lua`, `song_library.lua` (poll dt forwarding), `main.lua` (poll dt and handlebar migration), `colours.lua` (map both existing groups to one paint key) and `colour_controls.lua` (one fewer visible row). The other ten runtime files, including playback, foreign-game audio handling, colour picker, part masks and automatic cycling, are byte-for-byte unchanged from v1.9.2.
 
-ImportAccess's supported cache API replaces writable compatibility aliases. Old library indices and tracks are read as fallback sources without deleting them. Decoder Sources take FileData constructed from validated owned bytes. Other-game program caches have distinct real paths, and the active game selection is not changed.
+## Native mobile importing
 
-The native file dialog is delegated to engine FilePicker/RomImporter entry points with a size-limited local receiving proxy. Desktop selected paths are read by the engine, not by restricted mod io. Native mobile requests use unique own-mod baseroms staging destinations; only matching completions/errors are consumed. Obsolete ROM-picker fallback is rejected. Cancellation does not block a new import, and late cancelled completions are discarded. The generic Import action can fall back to an engine-backed file browser; no missing OS permissions are bypassed.
+Both current per-request completion and older shared required-import staging are supported. Current direct deliveries have a destination, byte count and MD5 marker. Old bridges can return a staged file without any completion marker. The new poller waits for stable markerless data and uses the native bounded reader; `.part` files are not consumed. A previous pending record can recover returned data, and pressing Import Song can retry a request with no callback.
 
-Colour geometry, hand/handlebar masks, trainer rendering and automatic mounting are unchanged. Appearance option navigation uses press edges; chart movement still repeats. Existing companion checks are historical evidence, not a new certification of every enabled-mod combination.
+Only the current request's private staging or its owned required-import slot is cleaned. Pre-existing unrelated legacy staging prevents a new request from starting. Other imports' completion markers and ROM/save/mod staging are left alone. A timeout clears a silent wait. This does not bypass OS permissions, add a new picker to a host without one, or repair an unreadable file-provider URI.
 
-See VERIFICATION.md. Real Linux LÖVE decoder tests use null output; OS dialogs on other platforms and physical gameplay remain device-test items. Future engine changes can require fixes despite the open version declaration.
+Desktop file-picking and file-backed/foreign-game playback code retain their prior implementations. All platform-native dialog behaviour still needs device confirmation; simulated callbacks do not prove that every phone's file provider returns a file correctly.
 
-For v1.9.1, only main.lua (option registration/non-destructive migration) and audio_menu.lua (selector row) change at runtime. The other 13 runtime files, including the repaired audio engine, song library, importing and appearance implementation, are byte-for-byte identical to v1.9.0.
+## Appearance
 
-## v1.9.2 default initialisation
+The old DETAILS group and HANDLEBARS group use one HANDLEBARS value. This is the union of existing conservative pixel mappings, not an expansion into uncertain rider outlines. Gen 1/Gen 2 detection, Trainer Skins treatment, frame timing and native sprite geometry are unchanged.
 
-Only `main.lua` changes from v1.9.1. The other 14 runtime modules are byte-for-byte unchanged. Initialisation uses the actual stored options, not schema fallback values, so an existing zero volume or false auto-bike flag is retained. When no bicycle volume was saved, normal Music is copied once after the game options exist. The options-only writer persists these preferences; no new progress-save writer, ROM migration or library operation is added.
+A previously custom handlebar value wins. If handlebars were Original and Details was custom, Details supplies the combined value. If neither was custom, Original is retained. Existing WHEEL, STRIPE, CENTRE, EDGE and their remembered values are unchanged. The two old independent paints cannot both be retained visually with one control; the obsolete value remains stored as history for rollback. Reset restores all visible paint and also clears the obsolete Details paint key.
 
-The default routing for a missing/invalid mode is now BICYCLE. Valid stored AREA/BICYCLE/BOTH choices and the legacy cycling alias remain supported. A retained OFF value from v1.9.0 is still respected, not silently raised.
+No progress-save writer, save-format conversion, ROM patch, new permission or active-game switch is added. Defaults, auto-bike ON/OFF, routing, song selection, filters, volumes, native Audio and resume remain as saved. Back up progress before testing any mod update.

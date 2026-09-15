@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.9.3 — Mobile song import and combined handlebars
+
+- Accept both per-request native files/markers and older required-import staging delivery.
+- Read selected files through the engine's bounded import reader; check complete/stable bytes before decoding.
+- Clear finished/failed pending requests, recover earlier pending deliveries, and allow retry when a picker returns no callback.
+- Preserve unrelated import markers, ROM/save/mod staging and original user files.
+- Merge DETAILS into HANDLEBARS while preserving existing bar colour, with legacy Details as the Original fallback.
+- Show five appearance controls; reset restores the five visible components and clears the obsolete detail paint key.
+- Preserve playback, routing, first-install defaults, stored levels/filters and automatic cycling.
+- Add native-sandbox completion, retry, migration and pixel-region regression tests plus a real LOVE callback/decoder integration check.
+
 ## 1.9.2 — First-install defaults
 
 - Default to AUTO BIKE ON, BICYCLE routing and the original bicycle theme.
