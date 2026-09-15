@@ -1,18 +1,18 @@
-name: Publish AUTOBIKE+ v1.9.1
+name: Publish AUTOBIKE+ v1.9.2
 
 on:
   push:
     branches: [main]
     paths:
-      - .github/staging/autobike-v1.9.1/**
-      - .github/workflows/publish-v1.9.1.yml
+      - .github/staging/autobike-v1.9.2/**
+      - .github/workflows/publish-v1.9.2.yml
   workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: autobike-release-v1.9.1
+  group: autobike-release-v1.9.2
   cancel-in-progress: false
 
 jobs:
@@ -30,9 +30,9 @@ jobs:
           git clone --no-checkout "https://github.com/${REPO}.git" source
           git -C source checkout --detach "$SOURCE_SHA"
 
-      - name: Apply the reviewed source with base and target hash checks
+      - name: Apply reviewed source with base and target hash checks
         working-directory: source
-        run: python3 .github/staging/autobike-v1.9.1/restore.py
+        run: python3 .github/staging/autobike-v1.9.2/restore.py
 
       - name: Obtain pinned engine for native-module regression tests
         run: |
@@ -43,13 +43,14 @@ jobs:
           test "$(git -C engine rev-parse HEAD)" = '4dadfd55a88e796c15fa7549b7c56e60e7c9b6d5'
           git -C engine sparse-checkout set src data
 
-      - name: Verify selector, migration, native Audio isolation and saved mixes
+      - name: Test fresh installs, existing preferences, first ride and update metadata
         working-directory: source
         run: |
           set -euo pipefail
           for file in ./*.lua; do luac5.3 -p "$file"; done
-          lua5.3 verification/v1.9.1/check_mode_menu.lua ../engine
-          lua5.3 verification/v1.9.1/check_updater.lua ../engine
+          lua5.3 verification/v1.9.2/check_defaults.lua ../engine
+          lua5.3 verification/v1.9.2/check_first_ride.lua ../engine
+          lua5.3 verification/v1.9.2/check_updater.lua ../engine
           lua5.3 verification/v1.9.0/check_library_sandbox.lua ../engine
           lua5.3 verification/v1.9.0/check_import_picker.lua ../engine
           for edition in red blue yellow gold silver crystal; do
@@ -73,7 +74,7 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import json, shutil, subprocess
-          stage = Path('.github/staging/autobike-v1.9.1')
+          stage = Path('.github/staging/autobike-v1.9.2')
           files = []
           for path in sorted(stage.glob('ops*.json')):
               files.extend(entry['path'] for entry in json.loads(path.read_text()))
@@ -83,7 +84,7 @@ jobs:
           PY
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'Restore AUTOBIKE+ v1.9.1 quick music selector' -m 'Keep AREA/BICYCLE/BOTH independent of saved gains, filters and songs. Remove destructive mode-to-volume migration. Native menu, sandbox, routing and persistence regressions passed.'
+          git commit -m 'Publish AUTOBIKE+ v1.9.2 first-install defaults' -m 'Default new installs to auto-bike ON and BICYCLE routing. Copy normal Music volume only when bike volume is unsaved, preserving OFF and all existing preferences. Native first-run, reinstall, routing and storage regressions passed.'
           gh auth setup-git
           git push origin HEAD:main
           echo "RELEASE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
@@ -95,16 +96,16 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          if gh release view v1.9.1 >/dev/null 2>&1; then
-            echo 'v1.9.1 already exists; refusing to overwrite it.'
+          if gh release view v1.9.2 >/dev/null 2>&1; then
+            echo 'v1.9.2 already exists; refusing to overwrite it.'
             exit 1
           fi
-          gh release create v1.9.1 dist/bicycle_plus-1.9.1.zip dist/SHA256SUMS.txt \
-            --target "$RELEASE_SHA" --title 'AUTOBIKE+ v1.9.1 - Quick music selector restored' \
-            --notes-file RELEASE_NOTES_v1.9.1.md --latest
-          gh release view v1.9.1 --json url,tagName,assets
+          gh release create v1.9.2 dist/bicycle_plus-1.9.2.zip dist/SHA256SUMS.txt \
+            --target "$RELEASE_SHA" --title 'AUTOBIKE+ v1.9.2 - First-install defaults' \
+            --notes-file RELEASE_NOTES_v1.9.2.md --latest
+          gh release view v1.9.2 --json url,tagName,assets
 
-      - name: Download published assets and verify their exact bytes
+      - name: Download published assets and verify exact bytes
         working-directory: source
         env:
           GH_TOKEN: ${{ github.token }}
@@ -112,8 +113,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir downloaded
-          gh release download v1.9.1 --pattern 'bicycle_plus-1.9.1.zip' --pattern 'SHA256SUMS.txt' --dir downloaded
-          cmp dist/bicycle_plus-1.9.1.zip downloaded/bicycle_plus-1.9.1.zip
+          gh release download v1.9.2 --pattern 'bicycle_plus-1.9.2.zip' --pattern 'SHA256SUMS.txt' --dir downloaded
+          cmp dist/bicycle_plus-1.9.2.zip downloaded/bicycle_plus-1.9.2.zip
           cmp dist/SHA256SUMS.txt downloaded/SHA256SUMS.txt
           cd downloaded
           sha256sum --check SHA256SUMS.txt

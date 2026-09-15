@@ -1,0 +1,93 @@
+[
+  {
+    "path": "main.lua",
+    "before": "34c87e9ec12806d7b465a28fd4ff130d54eb749d811295923ab85fa4e5fc6193",
+    "after": "30e3cf759ac522c1c603b04100a4c82a5d44c2aef9dab020939c8f7b67fe3ab2",
+    "edits": [
+      [28,29,"    spelling=\"uk\", riding_music=\"bicycle\",\n"],
+      [47,48,"    if key == \"riding_music\" and not allowed(ridingMusicChoices,v) then return \"bicycle\" end\n"],
+      [86,87,"      {key=\"riding_music\", type=\"choice\", label=\"MUSIC ON BIKE\", default=\"bicycle\",\n"],
+      [156,158,"  -- First-run defaults are resolved from raw stores, not options:get (which\n  -- substitutes schema defaults). Keep explicit zero/false and prior choices.\n  -- Copy Music volume once; later changes to Music must not retune the bike.\n"],
+      [162,169,"    if (tonumber(saved._audio_layout) or 0)>=5 or (tonumber(live._audio_layout) or 0)>=5 then return end\n    local function stored(key)\n      if live[key]~=nil then return live[key] end\n      return saved[key]\n    end\n    local mode=stored(\"riding_music\") or stored(\"music_mode\")\n    if mode==\"cycling\" then mode=\"bicycle\" end\n    if not allowed(ridingMusicChoices,mode) then mode=\"bicycle\" end\n    local volume=stored(\"bike_volume\")\n    if volume==nil then\n      local music=o.musicVol\n      if music==nil and game.options then music=game.options.musicVol end\n      music=tonumber(music)\n      if not music or music~=music or music==math.huge or music==-math.huge then music=7 end\n      volume=math.max(0,math.min(7,math.floor(music)))\n    end\n    local auto=stored(\"auto_mount\")\n    if auto==nil then auto=true end\n    -- Updates/reinstalls keep existing values, including OFF. v1.9.0's zeroed\n    -- sliders cannot be reconstructed and are never raised by this migration.\n"],
+      [170,171,"    saved.bike_volume,live.bike_volume=volume,volume\n    saved.auto_mount,live.auto_mount=auto,auto\n    saved._audio_layout,live._audio_layout=5,5\n"]
+    ]
+  },
+  {
+    "path": "manifest.json",
+    "before": "52eaca3e59d176a591a8a892e2d87dae45806d0eed2f4dbc88bcc3010b78fe5a",
+    "after": "e31b5a938faff41399e554644a8c258e273f84b1be51fca4bd01b81abd33328d",
+    "edits": [[3,4,"  \"version\": \"1.9.2\",\n"]]
+  },
+  {
+    "path": "README.md",
+    "before": "c631530d6c5f6e3e553e45e5eaa02274f94297bbb7e3c806816193f31bba8bf4",
+    "after": "c32c9f766b3495e79aceb27f69a89b2275cb98dedd841801a12fdbc256b3f7de",
+    "edits": [
+      [4,5,"**v1.9.2 — sensible first-install defaults; existing preferences retained.**\n"],
+      [10,11,"Use **MODS → Check for updates → Update All** from Bicycle Plus v1.4.2 or newer. Confirm **AUTOBIKE+ 1.9.2**, then **fully close and reopen the app** to clear any old audio-menu hooks.\n"],
+      [12,13,"New/manual installs use **bicycle_plus-1.9.2.zip**, left zipped. Import it through MODS and enable the games you play. The filename retains the old ID for the updater. Do not import GitHub's Source code ZIP. v1.4.0/v1.4.1 users need one manual replacement to add the update source. Do not delete saves or app data.\n"],
+      [15,15,"\n## First-install defaults\n\nWith no saved AUTOBIKE+ preferences, **AUTO BIKE is ON**, **ON BIKE is BICYCLE**, and **BIKE SONG is the original bicycle theme**. A missing bicycle-volume setting is initialised from the game's current **Music volume**, including OFF. This is copied once when the game and its options are ready, then saved as the independent cycling volume. If Music volume is absent, the native default of 7 is used.\n\nA saved bike volume always wins, including zero. Updates and reinstalls with retained preferences do not reset previously chosen AREA/BICYCLE/BOTH, auto-bike OFF, filters, colours, imported songs or resume behaviour. Reinstalling after deleting all app settings cannot recover preferences that no longer exist.\n\nExample: a new user with Music volume 3 starts with bicycle volume 3. Changing normal Music to 6 later does not change that saved bicycle volume. They can choose AREA or BOTH and adjust volumes/filters at any time; mode changes leave the mix alone.\n"]
+    ]
+  },
+  {
+    "path": "CHANGELOG.md",
+    "before": "b28c131d235f198db7ca57b6ef9b268b9f46301dc697ba0bbf43905fe807c249",
+    "after": "8fc4da370ec2a10309b663d81a55821de73afb27b6c75b65b6ce39d35480a1c5",
+    "edits": [[1,1,"\n## 1.9.2 — First-install defaults\n\n- Default to AUTO BIKE ON, BICYCLE routing and the original bicycle theme.\n- Initialise only a missing bicycle volume from normal Music once, retaining OFF.\n- Preserve saved mode, auto-bike choice, volume, filters and all unrelated preferences on update/reinstall.\n- Read raw saved/live stores before option-schema fallbacks; initialise when game options are ready.\n- Keep AREA/BICYCLE/BOTH independent from volume/filter choices.\n- Only main.lua changes at runtime; playback, file importing, colours and movement modules are unchanged.\n"]]
+  },
+  {
+    "path": "COMPATIBILITY.md",
+    "before": "1643bdd45d3e8c76f37a4ce245bbeb5e7e981e74e53253578c6d9f663f5de86a",
+    "after": "220dbcfae7007aa2fb90a1c998ce644f52c53f4ec1ba36346249cd51630ce03e",
+    "edits": [
+      [0,1,"# AUTOBIKE+ v1.9.2 compatibility\n"],
+      [15,15,"\n## v1.9.2 default initialisation\n\nOnly `main.lua` changes from v1.9.1. The other 14 runtime modules are byte-for-byte unchanged. Initialisation uses the actual stored options, not schema fallback values, so an existing zero volume or false auto-bike flag is retained. When no bicycle volume was saved, normal Music is copied once after the game options exist. The options-only writer persists these preferences; no new progress-save writer, ROM migration or library operation is added.\n\nThe default routing for a missing/invalid mode is now BICYCLE. Valid stored AREA/BICYCLE/BOTH choices and the legacy cycling alias remain supported. A retained OFF value from v1.9.0 is still respected, not silently raised.\n"]
+    ]
+  },
+  {
+    "path": "VERIFICATION.md",
+    "before": "2e9480011d1fc03788e1213034b804cd571e1710ce9e3b1d1ba0584614b6c80e",
+    "after": "f5d475af48e335f930eed48203f6f41bf4e4c66664a790404e8b98d00c4be100",
+    "edits": [
+      [0,1,"# AUTOBIKE+ v1.9.2 verification\n"],
+      [4,5,"Baseline: published v1.9.1 commit `1d2c0e51aec99042ac4827d077b6410dc076154b`. Only `main.lua` changes at runtime. The other 14 runtime modules are checked unchanged. This patch changes missing-mode defaults to BICYCLE, initialises missing bike volume from normal Music once, and persists the existing/default auto-bike value without overriding false.\n"],
+      [6,7,"## Executed local checks\n"],
+      [8,9,"The local runner used texlua and engine Lua source extracted from the supplied v0.2.59 Windows executable, not a running game executable. The extracted Loader and Music modules' Git blob hashes match the pinned v0.2.60 source inspected for this change.\n"],
+      [10,11,"- `check_defaults.lua`: 1,266 install/upgrade cases over six editions and 34,248 assertions. Uses the actual Loader `_api` options define/get methods, native sandbox, event bus and screen stack. Audio/movement/graphics/filesystem are test doubles. Covers initial Music 0–7, stored bike 0–7, all three routes, stored false/zero, separate raw stores, older markers, legacy mode aliases, missing/invalid native values, delayed options availability, one-time persistence, mode switching, safe mode and retained settings on a new mod instance.\n- `check_first_ride.lua`: 48 initial-volume/edition cases and 564 assertions. Loads the production main/audio/library and native Loader/Music modules. Sources and movement are simulated. Checks bicycle-only initial routing, inherited gain including OFF, restoration on foot, independent later Music changes, AREA/BOTH switching and audio cleanup.\n- `check_updater.lua`: native manifest/update metadata, stable mod ID/repository, preferred installable ZIP and ordering.\n"],
+      [12,14,"The publishing workflow repeats these checks against upstream v0.2.60 commit `4dadfd55a88e796c15fa7549b7c56e60e7c9b6d5` and runs the existing sandbox/import/routing suites. See Actions for actual outcomes; configuring a workflow is not proof that it passed.\n"],
+      [15,16,"## Integrity and limits\n"],
+      [17,18,"The builder checks all runtime hashes, 14 unchanged modules and an explicit source/document allowlist. It creates a deterministic ZIP and per-file metadata. Publication downloads its own uploaded assets to compare bytes and verify SHA-256.\n"],
+      [19,20,"These checks are not a hardware-device, file-picker, decoder-listening or complete gameplay test. No new audio engine, movement, import or progress-save path is introduced. New preferences use the existing options-only writer. A crash or host failure can still lose unsaved progress. Backups remain appropriate when testing.\n"],
+      [21,24,"A saved OFF volume is never raised. The initial normal Music value is a one-time copy rather than ongoing inheritance. Existing presets keep their mode and levels; old v1.9.0 values already changed to zero cannot be safely reconstructed.\n"]
+    ]
+  },
+  {
+    "path": "RELEASE_NOTES_v1.9.2.md",
+    "before": null,
+    "after": "252acbf4db4d7b560e1ec9d70b4f2c7a9ed2003a77665c79ca42bbc9358f4d99",
+    "edits": [[0,0,"# AUTOBIKE+ v1.9.2 — First-install defaults\n\n**Use MODS → Check for updates → Update All**, then relaunch the game. Existing v1.4.2+ installations keep the same mod ID and update source. The installer remains `bicycle_plus-1.9.2.zip`.\n\n## New users can install and ride\n\n- **AUTO BIKE: ON** by default.\n- **ON BIKE: BICYCLE** by default, rather than mixing both tracks.\n- **BIKE SONG: Original Bicycle Theme** remains the default.\n- **CYCLING MUSIC VOLUME** starts at the game's current **Music volume** only when no bicycle volume is already saved. OFF is preserved. With no native Music setting, the native default of 7 is used.\n\nThe initial volume is copied once, not permanently linked. For example, normal Music 3 gives a new bicycle volume of 3; changing normal Music later will not overwrite the independent bicycle setting.\n\n## Existing users keep their preferences\n\nA previously saved bike volume wins, including OFF. Existing auto-bike OFF, AREA/BICYCLE/BOTH, volume/filter choices, songs, resume behaviour and colours are retained. The default changes are not a reset of everybody's setup. Reinstalling also retains preferences when the host still has them; deleted app data cannot be recovered.\n\nThe quick **AREA / BICYCLE / BOTH** selector remains available and still changes only which tracks are heard. Dismounting restores normal off-bike audio. No customisation options have been removed.\n\nOnly `main.lua` changes at runtime. The other 14 runtime modules, including playback, importing, colour customisation and movement, are unchanged from v1.9.1.\n\n## Checks and limits\n\nAutomated checks cover first-install volumes 0–7, stored volumes 0–7, all music modes, separate saved/live stores, prior-version settings, delayed game-option availability, safe-mode deferral, reinstalls and off-bike restoration. They use the native Loader option API, sandbox, screens and Music module with simulated disk/graphics/device boundaries. This is not a new physical-device or full gameplay test.\n\nBack up progress before testing a mod update. This patch adds no progress-save writer or save-format migration. Manual installations use the attached mod ZIP, not GitHub's Source code ZIP.\n"]]
+  },
+  {
+    "path": ".github/scripts/build_autobike_release.py",
+    "before": "4b100060b50e4a75786b3042e75f141ddefee2fb547b8316217b12324e74887b",
+    "after": "16a0cdf4232310752ef09dad51235e7711b7d74631b64345b8d13ef933edc7ab",
+    "edits": [
+      [7,8,"VERSION='1.9.2'\n"],
+      [14,15,"    hashes=json.loads((ROOT/'verification/v1.9.2/runtime-sha256.json').read_text())\n"],
+      [16,17,"    docs=['README.md','LICENSE','CHANGELOG.md','COMPATIBILITY.md','VERIFICATION.md','RELEASE_NOTES_v1.9.2.md','docs/CUSTOM_MUSIC.md']\n"],
+      [19,20,"    for name,digest in hashes['unchanged_from_v1_9_1'].items(): assert sha(files[name])==digest, name\n"]
+    ]
+  },
+  {
+    "path": "verification/v1.9.2/runtime-sha256.json",
+    "before": null,
+    "after": "216b9a1d8748577f498ebb9b2606ed91f928865ca3991401e497d1973a335bfc",
+    "edits": [[0,0,"{\n  \"runtime\": {\n    \"audio.lua\": \"b737fbc14b0567fb3c975cc45b4655e395b3fa4010bd37c602e92b01fab75e3e\",\n    \"audio_menu.lua\": \"232cca6d3c43201cd66eff3ba637735a69ca8857ba7bf31a64462e2a4c4c36fd\",\n    \"automount.lua\": \"56cd15b7e830eb50551245978976b533114aebdc72218ded28c35f268d6d019c\",\n    \"bike_parts.lua\": \"33af78cc7d719755096cb49057d9d8b262ddecbce71df98cd45105b0aca16b19\",\n    \"colour_controls.lua\": \"7b0f9f9c3488a8d2cf7c2afa811408d27885ff624cc49fbb6b949e165551f4f7\",\n    \"colour_picker.lua\": \"6860977a51b6410a4e54112024c46ae8a58c2e3f5233120120ae6b97663258eb\",\n    \"colour_ui.lua\": \"aab8d89a89040232d486a03a97aff387a823cefe4840a043e85896432d72213a\",\n    \"colour_values.lua\": \"9a6121b6c4659a5e7640ce47a6ff0d7c876cd2f2fa5d3affb82e1d25eda42e7e\",\n    \"colours.lua\": \"1dd05758b8c92cb4b22ac01b174251cd6ee3d286cbfa5777aa6ebc6da3b844e6\",\n    \"hardware_colours.lua\": \"61f9f04e20aee2f9cd094bb76d038db005f0d2ecb3b7b905bb2a948eb5fe45f0\",\n    \"import_picker.lua\": \"903cb3cd90ad652459908ddfb6f5602149cc5521ccd016da252a235f2cd218f6\",\n    \"main.lua\": \"30e3cf759ac522c1c603b04100a4c82a5d44c2aef9dab020939c8f7b67fe3ab2\",\n    \"music_menu.lua\": \"522357cdebe4cc4b3b23f97e82a6055ec8657f9c2106e4119dc9a397163f8dbb\",\n    \"settings_menu.lua\": \"7f3074f5b2bbf673c5b241e3a07fa5711a09884436e3580a39e19b7cb8da7cde\",\n    \"song_library.lua\": \"c5c7caa4fc5e321928feafa15ff010ed5116cd702323540507197d4f8b0eed4e\"\n  },\n  \"unchanged_from_v1_9_1\": {\n    \"audio.lua\": \"b737fbc14b0567fb3c975cc45b4655e395b3fa4010bd37c602e92b01fab75e3e\",\n    \"audio_menu.lua\": \"232cca6d3c43201cd66eff3ba637735a69ca8857ba7bf31a64462e2a4c4c36fd\",\n    \"automount.lua\": \"56cd15b7e830eb50551245978976b533114aebdc72218ded28c35f268d6d019c\",\n    \"bike_parts.lua\": \"33af78cc7d719755096cb49057d9d8b262ddecbce71df98cd45105b0aca16b19\",\n    \"colour_controls.lua\": \"7b0f9f9c3488a8d2cf7c2afa811408d27885ff624cc49fbb6b949e165551f4f7\",\n    \"colour_picker.lua\": \"6860977a51b6410a4e54112024c46ae8a58c2e3f5233120120ae6b97663258eb\",\n    \"colour_ui.lua\": \"aab8d89a89040232d486a03a97aff387a823cefe4840a043e85896432d72213a\",\n    \"colour_values.lua\": \"9a6121b6c4659a5e7640ce47a6ff0d7c876cd2f2fa5d3affb82e1d25eda42e7e\",\n    \"colours.lua\": \"1dd05758b8c92cb4b22ac01b174251cd6ee3d286cbfa5777aa6ebc6da3b844e6\",\n    \"hardware_colours.lua\": \"61f9f04e20aee2f9cd094bb76d038db005f0d2ecb3b7b905bb2a948eb5fe45f0\",\n    \"import_picker.lua\": \"903cb3cd90ad652459908ddfb6f5602149cc5521ccd016da252a235f2cd218f6\",\n    \"music_menu.lua\": \"522357cdebe4cc4b3b23f97e82a6055ec8657f9c2106e4119dc9a397163f8dbb\",\n    \"settings_menu.lua\": \"7f3074f5b2bbf673c5b241e3a07fa5711a09884436e3580a39e19b7cb8da7cde\",\n    \"song_library.lua\": \"c5c7caa4fc5e321928feafa15ff010ed5116cd702323540507197d4f8b0eed4e\"\n  }\n}\n"]]
+  },
+  {
+    "path": "verification/v1.9.2/check_updater.lua",
+    "before": null,
+    "after": "609c590cb8f7cc27036fecfd539a99c55f98316fb425dbf0715635b631d4be01",
+    "edits": [[0,0,"local engine=assert(arg[1]);package.path=engine..'/?.lua;'..package.path\nlocal Json=require('src.link.Json');local Manifest=require('src.mods.Manifest');local Update=require('src.mods.ModUpdate')\nlocal f=assert(io.open('manifest.json'));local raw=Json.decode(f:read('*a'));f:close()\nlocal m=Manifest.validate(raw,'bicycle_plus')\nassert(m.id=='bicycle_plus'and m.version=='1.9.2'and m.github=='moocd123/gen1recomp-bicycle-plus')\nassert(raw.name=='AUTOBIKE+'and raw.game_version=='>=0.2.59'and raw.api==2 and #raw.games==6)\nlocal r=assert(Update.parseRelease({tag_name='v1.9.2',prerelease=false,assets={\n {name='bicycle_plus-1.9.2.zip',browser_download_url='https://example.invalid/bicycle_plus-1.9.2.zip'}}},m.id))\nassert(r.zip.name=='bicycle_plus-1.9.2.zip')\nfor _,v in ipairs({'1.4.2','1.7.0','1.8.0','1.9.0','1.9.1'})do assert(Update.statusFor(v,{r})=='available')end\nassert(Update.statusFor('1.9.2',{r})=='current')\nprint('PASS native manifest/update identity, asset name and version discovery. No live client update claimed.')\n"]]
+  }
+]
