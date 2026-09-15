@@ -1,0 +1,266 @@
+[
+  {
+    "path": "main.lua",
+    "before": "125109cb79cc34740c84d473e26a5f65b39ddb23f2dd8c74294520017efb47e2",
+    "after": "34c87e9ec12806d7b465a28fd4ff130d54eb749d811295923ab85fa4e5fc6193",
+    "edits": [
+      [
+        18,
+        19,
+        "  local ridingMusicChoices = {{\"AREA\", \"area\"}, {\"BICYCLE\", \"bicycle\"}, {\"BOTH\", \"both\"}}\n"
+      ],
+      [
+        86,
+        86,
+        "      {key=\"riding_music\", type=\"choice\", label=\"MUSIC ON BIKE\", default=\"both\",\n        choices=ridingMusicChoices},\n"
+      ],
+      [
+        154,
+        156,
+        "  -- Routing and gain are independent. Never turn a stored volume down just\n  -- because the player chooses not to hear that track for the current ride.\n"
+      ],
+      [
+        160,
+        168,
+        "    if (tonumber(saved._audio_layout) or 0)>=4 or (tonumber(live._audio_layout) or 0)>=4 then return end\n    local mode=live.riding_music or saved.riding_music or live.music_mode or saved.music_mode\n    if mode=='cycling' then mode='bicycle' end\n    if not allowed(ridingMusicChoices,mode) then mode='both' end\n    -- v1.9.0 stored BOTH and explicit zero volumes. Keep those values exactly:\n    -- it did not retain the previous gains, so guessing would overwrite user edits.\n    -- Direct upgrades from earlier versions retain their saved routing choice.\n    saved.riding_music,live.riding_music=mode,mode\n    saved._audio_layout,live._audio_layout=4,4\n"
+      ]
+    ]
+  },
+  {
+    "path": "audio_menu.lua",
+    "before": "e81bf245ed3880c9bb694c2c4ee72d3a60490ccc805ad6701410ee87b4f9c908",
+    "after": "232cca6d3c43201cd66eff3ba637735a69ca8857ba7bf31a64462e2a4c4c36fd",
+    "edits": [
+      [
+        7,
+        7,
+        "  local modes={'area','bicycle','both'}\n  local function musicMode()\n    return {label='ON BIKE',key='riding_music',value=function()\n      return get('riding_music'):upper()\n    end,step=function(d,s)\n      local current=get('riding_music');local at=3\n      for i,mode in ipairs(modes) do if current==mode then at=i;break end end\n      -- Change only routing; saved gains, filters, song and resume stay intact.\n      set(s.game,'riding_music',modes[(at-1+d)%#modes+1])\n    end}\n  end\n"
+      ],
+      [
+        23,
+        23,
+        "      musicMode(),\n"
+      ]
+    ]
+  },
+  {
+    "path": "manifest.json",
+    "before": "24b7b1c91cc417bdd149d9bf0c58a9ff8730d53b8549185250892ae303dc0335",
+    "after": "52eaca3e59d176a591a8a892e2d87dae45806d0eed2f4dbc88bcc3010b78fe5a",
+    "edits": [
+      [
+        3,
+        4,
+        "  \"version\": \"1.9.1\",\n"
+      ]
+    ]
+  },
+  {
+    "path": "README.md",
+    "before": "4e68e7c65e6d83f90a444e52a9004ccaa50575c11578fa61b803281ae220c17c",
+    "after": "c631530d6c5f6e3e553e45e5eaa02274f94297bbb7e3c806816193f31bba8bf4",
+    "edits": [
+      [
+        4,
+        5,
+        "**v1.9.1 — quick music selector restored without changing your mix.**\n"
+      ],
+      [
+        10,
+        11,
+        "Use **MODS → Check for updates → Update All** from Bicycle Plus v1.4.2 or newer. Confirm **AUTOBIKE+ 1.9.1**, then **fully close and reopen the app** to clear any old audio-menu hooks.\n"
+      ],
+      [
+        12,
+        13,
+        "New/manual installs use **bicycle_plus-1.9.1.zip**, left zipped. Import it through MODS and enable the games you play. The filename retains the old ID for the updater. Do not import GitHub's Source code ZIP. v1.4.0/v1.4.1 users need one manual replacement to add the update source. Do not delete saves or app data.\n"
+      ],
+      [
+        34,
+        34,
+        "- **ON BIKE: AREA / BICYCLE / BOTH** — choose which tracks play without changing any saved volume, filter or song.\n"
+      ],
+      [
+        42,
+        43,
+        "**ON BIKE** is an independent routing switch. **AREA** plays only the location track; **BICYCLE** plays only your selected bicycle song; **BOTH** mixes them using your saved gains and filters. Suppressing a track does not turn its saved slider to zero. Dismounting still restores normal Music/SFX settings, regardless of the routing choice. A track whose saved volume is OFF remains silent even when selected.\n\nDirect upgrades from v1.8.0 or earlier retain their old AREA/BICYCLE/BOTH choice and saved mix. **v1.9.0 already converted modes to zero volumes and did not store the previous gains.** Those values cannot be reliably reconstructed. This update leaves them alone: adjust an affected OFF slider once to your preferred level, then switch modes without changing it again. No normal Music/SFX preferences are overwritten.\n"
+      ]
+    ]
+  },
+  {
+    "path": "CHANGELOG.md",
+    "before": "d0e1ddba1168beaaf1513a0cbe3d6d0f930bbae32f7d158a0c0e6ff84d66b50e",
+    "after": "b28c131d235f198db7ca57b6ef9b268b9f46301dc697ba0bbf43905fe807c249",
+    "edits": [
+      [
+        1,
+        1,
+        "\n## 1.9.1 — Restore the quick cycling-music selector\n\n- Add ON BIKE: AREA / BICYCLE / BOTH at the top of BIKE AUDIO.\n- Preserve every saved volume, filter, song and restart/resume choice when switching modes.\n- Replace destructive mode-to-volume migration with routing-only migration.\n- Preserve direct upgrades from older mode-based versions and do not guess gains already overwritten by v1.9.0.\n- Keep native Audio unmodified, AUTO BIKE first, one Bike Song path and tap-only settings navigation.\n- Add regression checks for migration, mode switching, mix preservation, native menu isolation and all six audio contexts.\n"
+      ]
+    ]
+  },
+  {
+    "path": "COMPATIBILITY.md",
+    "before": "d3050b8479789c2255d718457b1d30428c13e0d6e315fb84349338761eca2869",
+    "after": "1643bdd45d3e8c76f37a4ce245bbeb5e7e981e74e53253578c6d9f663f5de86a",
+    "edits": [
+      [
+        0,
+        1,
+        "# AUTOBIKE+ v1.9.1 compatibility\n"
+      ],
+      [
+        4,
+        5,
+        "The native Audio menu is no longer wrapped. The music/profile implementation still makes normal Music controls apply to area/normal music and uses a separate cycling gain. Off-bike SFX filtering is configured in AUTOBIKE+, not native Audio. AREA/BICYCLE/BOTH is again a separate routing setting. Mode changes never edit gain/filter values. Direct upgrades preserve the older choice; v1.9.0 zero-volume values are retained because their previous levels were not backed up. Colours and normal engine volume/filter preferences are retained.\n"
+      ],
+      [
+        13,
+        13,
+        "\nFor v1.9.1, only main.lua (option registration/non-destructive migration) and audio_menu.lua (selector row) change at runtime. The other 13 runtime files, including the repaired audio engine, song library, importing and appearance implementation, are byte-for-byte identical to v1.9.0.\n"
+      ]
+    ]
+  },
+  {
+    "path": "VERIFICATION.md",
+    "before": "2a8131e9b1506dba5d9520420a4a1ed02c726f7cb87758898eed059c3211e967",
+    "after": "2e9480011d1fc03788e1213034b804cd571e1710ce9e3b1d1ba0584614b6c80e",
+    "edits": [
+      [
+        0,
+        1,
+        "# AUTOBIKE+ v1.9.1 verification\n"
+      ],
+      [
+        2,
+        3,
+        "## Change boundary\n"
+      ],
+      [
+        4,
+        5,
+        "Baseline: published v1.9.0 commit `636856e2adee19a32296c06415726e5c740b14d6`.\n"
+      ],
+      [
+        6,
+        7,
+        "Only `main.lua` and `audio_menu.lua` change at runtime: restore the routing choice in the option schema and Bike Audio menu, and replace mode-to-zero-volume migration with a routing-only migration. The existing audio engine already supports independent routing. The other 13 runtime modules are unchanged and checked by SHA-256 during packaging.\n"
+      ],
+      [
+        8,
+        9,
+        "## Executed local regression checks\n"
+      ],
+      [
+        10,
+        15,
+        "Tests ran using texlua and the engine Lua modules extracted from the supplied v0.2.59 Windows executable. This is not running the complete game executable.\n"
+      ],
+      [
+        16,
+        17,
+        "- `check_mode_menu.lua`: native Sandbox/LegacyCompat, Screens/StateStack and both native OptionsMenu implementations. Nine initial-settings cases across six editions check old routing preservation, v1.9.0 zero-value retention, both saved/live options stores, repeated mode toggles and events, no gain/filter/song/resume changes, SAME/schema behaviour, tap-only input, selector layout, last-row reachability, idempotence, safe mode and untouched native Audio. Graphics, services and input are software doubles.\n- `check_mode_audio.lua`: native Music/Hooks/Events with the production sandboxed library/audio modules and simulated playback Sources. Exercises six editions, original/current/imported-file songs, all 64 area/bike volume pairs, repeated AREA/BICYCLE/BOTH transitions, distinct filters, OFF, SAME inheritance, dismounting, battles and cleanup. This is not a real decoder or listening test.\n"
+      ],
+      [
+        18,
+        19,
+        "The publishing workflow repeats these against pinned v0.2.60 engine commit `4dadfd55a88e796c15fa7549b7c56e60e7c9b6d5`, and reruns the existing v1.9.0 library/importer/audio regression tests. Consult Actions for the actual workflow outcome; configuration alone is not proof of execution.\n"
+      ],
+      [
+        20,
+        21,
+        "## Integrity and limitations\n"
+      ],
+      [
+        22,
+        23,
+        "The builder validates the manifest, exact runtime hashes, all 13 unchanged modules and a source-only file allowlist. The released ZIP is downloaded and compared byte-for-byte with the build.\n"
+      ],
+      [
+        24,
+        25,
+        "No new physical phone, operating-system picker, GPU, speaker/listening or complete gameplay session was tested here. The real decoder checks from v1.9.0 remain historical evidence for the unchanged playback/import modules, not newly executed physical-device checks. Progress saves and imported library data are not migrated by this patch. Mode migration writes only the routing option and its layout marker via the existing options writer.\n"
+      ],
+      [
+        26,
+        29,
+        "v1.9.0 did not retain gains it replaced with zero. Those values cannot be inferred safely; this patch preserves them instead of guessing. A user may need to raise an affected OFF channel once. Thereafter, changing the selector does not change either slider or filter.\n"
+      ]
+    ]
+  },
+  {
+    "path": "docs/CUSTOM_MUSIC.md",
+    "before": "757e9085cd1dd14e4be04023aad90b429d561ec2d0967fccccc78d0615f62d21",
+    "after": "9b23614034a7d27b57109d91d2cf3d9ab5bb6fd0ff4aa4cd0192c256d86d483f",
+    "edits": [
+      [
+        6,
+        7,
+        "The cycling track has its own volume and filter. **BIKE AUDIO → ON BIKE: AREA / BICYCLE / BOTH** selects the audible tracks without changing those preferences. Both uses the saved area/bicycle gains; OFF still means a channel is silent. Dismounting restores normal/off-bike Music and SFX from the game's unmodified Audio menu. SAME inherits normal settings. ON MOUNT controls restart/resume within the current session.\n\nThe selector changes neither the chosen song nor resume behaviour. A stored OFF value from v1.9.0 is retained rather than guessed; raise it once to the desired level if that channel should be heard.\n"
+      ]
+    ]
+  },
+  {
+    "path": "RELEASE_NOTES_v1.9.1.md",
+    "before": null,
+    "after": "70be908b2bcecf04da443152189fbd6ec6a18930f566aa2545a2cc0cc38ca8ec",
+    "edits": [
+      [
+        0,
+        0,
+        "# AUTOBIKE+ v1.9.1 — Quick music selector restored\n\n**Use MODS → Check for updates → Update All, then close and reopen the app.** Existing installations from v1.4.2 onward can update normally. The mod ID and repository have not changed.\n\n## ON BIKE: AREA / BICYCLE / BOTH\n\nThe first row under **OPTIONS → AUTOBIKE+ → BIKE AUDIO** is now **ON BIKE**. Left/Right or A changes the mode.\n\n- **AREA:** only the location's track while cycling.\n- **BICYCLE:** only your selected bicycle song while cycling.\n- **BOTH:** both tracks at their saved volumes and filters.\n\n**This switches which tracks play, not their settings.** Volumes, filters, SAME inheritance, the chosen song and restart/resume preference are untouched. Dismounting returns to the normal off-bike settings. OFF is still respected: selecting a muted channel does not secretly increase its volume.\n\nExample: save area volume 2 with a filter and bicycle volume 5 without one. Switching to BICYCLE hides the area track. Returning to BOTH restores the same mix without rebuilding it.\n\n## Existing preferences\n\nDirect upgrades from earlier versions preserve their old music-mode selection without zeroing a slider. For users who ran v1.9.0, its migration may already have saved AREA VOLUME or CYCLING MUSIC VOLUME as OFF. That version did not keep the previous level, so it cannot be reliably recovered. This patch preserves the current values; set an affected channel to your preferred level once, and mode switching will leave it alone thereafter.\n\nOnly main.lua and audio_menu.lua change at runtime. The native Audio menu remains unmodified; the AUTOBIKE+ layout, repaired imports, other-game playback, artwork and automatic cycling are retained.\n\n## Checks and limits\n\nRegression checks exercise the native sandbox, menus, options storage and music hooks against all six game contexts, with playback/graphics/input simulated. The checks cover repeated mode changes, migration, all volume combinations, filters, SAME, off-bike restoration and battles. They do not constitute a new physical-device or complete gameplay test. Back up progress when testing a mod update.\n\nManual installation uses **bicycle_plus-1.9.1.zip**, not GitHub's automatic Source code ZIP.\n"
+      ]
+    ]
+  },
+  {
+    "path": ".github/scripts/build_autobike_release.py",
+    "before": "c2ba74e3d0cd507d2edc6dbf43dc941366e374cd4b860e53fe99aef89f1ed4d7",
+    "after": "4b100060b50e4a75786b3042e75f141ddefee2fb547b8316217b12324e74887b",
+    "edits": [
+      [
+        7,
+        8,
+        "VERSION='1.9.1'\n"
+      ],
+      [
+        14,
+        15,
+        "    hashes=json.loads((ROOT/'verification/v1.9.1/runtime-sha256.json').read_text())\n"
+      ],
+      [
+        16,
+        17,
+        "    docs=['README.md','LICENSE','CHANGELOG.md','COMPATIBILITY.md','VERIFICATION.md','RELEASE_NOTES_v1.9.1.md','docs/CUSTOM_MUSIC.md']\n"
+      ],
+      [
+        19,
+        20,
+        "    for name,digest in hashes['unchanged_from_v1_9'].items(): assert sha(files[name])==digest, name\n"
+      ]
+    ]
+  },
+  {
+    "path": "verification/v1.9.1/check_updater.lua",
+    "before": null,
+    "after": "b2ec7c9779c36773daeb5297d2fda06bf742b6c0705334df012988278619e2db",
+    "edits": [
+      [
+        0,
+        0,
+        "local engine=assert(arg[1]);package.path=engine..'/?.lua;'..package.path\nlocal Json=require('src.link.Json');local Manifest=require('src.mods.Manifest');local Update=require('src.mods.ModUpdate')\nlocal f=assert(io.open('manifest.json'));local raw=Json.decode(f:read('*a'));f:close()\nlocal m=Manifest.validate(raw,'bicycle_plus')\nassert(m.id=='bicycle_plus'and m.version=='1.9.1'and m.github=='moocd123/gen1recomp-bicycle-plus')\nassert(raw.name=='AUTOBIKE+'and raw.game_version=='>=0.2.59'and raw.api==2 and #raw.games==6)\nlocal r=assert(Update.parseRelease({tag_name='v1.9.1',prerelease=false,assets={\n {name='bicycle_plus-1.9.1.zip',browser_download_url='https://example.invalid/bicycle_plus-1.9.1.zip'}}},m.id))\nassert(r.zip.name=='bicycle_plus-1.9.1.zip')\nfor _,v in ipairs({'1.4.2','1.7.0','1.8.0','1.9.0'})do assert(Update.statusFor(v,{r})=='available')end\nassert(Update.statusFor('1.9.1',{r})=='current')\nprint('PASS native manifest, update identity, preferred ZIP and version discovery. No live client download claimed.')\n"
+      ]
+    ]
+  },
+  {
+    "path": "verification/v1.9.1/runtime-sha256.json",
+    "before": null,
+    "after": "d6178d293a6364ee8e11c163209f013486fb494ceb40a9b1f33a8ee94774a406",
+    "edits": [
+      [
+        0,
+        0,
+        "{\n  \"runtime\": {\n    \"audio.lua\": \"b737fbc14b0567fb3c975cc45b4655e395b3fa4010bd37c602e92b01fab75e3e\",\n    \"audio_menu.lua\": \"232cca6d3c43201cd66eff3ba637735a69ca8857ba7bf31a64462e2a4c4c36fd\",\n    \"automount.lua\": \"56cd15b7e830eb50551245978976b533114aebdc72218ded28c35f268d6d019c\",\n    \"bike_parts.lua\": \"33af78cc7d719755096cb49057d9d8b262ddecbce71df98cd45105b0aca16b19\",\n    \"colour_controls.lua\": \"7b0f9f9c3488a8d2cf7c2afa811408d27885ff624cc49fbb6b949e165551f4f7\",\n    \"colour_picker.lua\": \"6860977a51b6410a4e54112024c46ae8a58c2e3f5233120120ae6b97663258eb\",\n    \"colour_ui.lua\": \"aab8d89a89040232d486a03a97aff387a823cefe4840a043e85896432d72213a\",\n    \"colour_values.lua\": \"9a6121b6c4659a5e7640ce47a6ff0d7c876cd2f2fa5d3affb82e1d25eda42e7e\",\n    \"colours.lua\": \"1dd05758b8c92cb4b22ac01b174251cd6ee3d286cbfa5777aa6ebc6da3b844e6\",\n    \"hardware_colours.lua\": \"61f9f04e20aee2f9cd094bb76d038db005f0d2ecb3b7b905bb2a948eb5fe45f0\",\n    \"import_picker.lua\": \"903cb3cd90ad652459908ddfb6f5602149cc5521ccd016da252a235f2cd218f6\",\n    \"main.lua\": \"34c87e9ec12806d7b465a28fd4ff130d54eb749d811295923ab85fa4e5fc6193\",\n    \"music_menu.lua\": \"522357cdebe4cc4b3b23f97e82a6055ec8657f9c2106e4119dc9a397163f8dbb\",\n    \"settings_menu.lua\": \"7f3074f5b2bbf673c5b241e3a07fa5711a09884436e3580a39e19b7cb8da7cde\",\n    \"song_library.lua\": \"c5c7caa4fc5e321928feafa15ff010ed5116cd702323540507197d4f8b0eed4e\"\n  },\n  \"unchanged_from_v1_9\": {\n    \"audio.lua\": \"b737fbc14b0567fb3c975cc45b4655e395b3fa4010bd37c602e92b01fab75e3e\",\n    \"automount.lua\": \"56cd15b7e830eb50551245978976b533114aebdc72218ded28c35f268d6d019c\",\n    \"bike_parts.lua\": \"33af78cc7d719755096cb49057d9d8b262ddecbce71df98cd45105b0aca16b19\",\n    \"colour_controls.lua\": \"7b0f9f9c3488a8d2cf7c2afa811408d27885ff624cc49fbb6b949e165551f4f7\",\n    \"colour_picker.lua\": \"6860977a51b6410a4e54112024c46ae8a58c2e3f5233120120ae6b97663258eb\",\n    \"colour_ui.lua\": \"aab8d89a89040232d486a03a97aff387a823cefe4840a043e85896432d72213a\",\n    \"colour_values.lua\": \"9a6121b6c4659a5e7640ce47a6ff0d7c876cd2f2fa5d3affb82e1d25eda42e7e\",\n    \"colours.lua\": \"1dd05758b8c92cb4b22ac01b174251cd6ee3d286cbfa5777aa6ebc6da3b844e6\",\n    \"hardware_colours.lua\": \"61f9f04e20aee2f9cd094bb76d038db005f0d2ecb3b7b905bb2a948eb5fe45f0\",\n    \"import_picker.lua\": \"903cb3cd90ad652459908ddfb6f5602149cc5521ccd016da252a235f2cd218f6\",\n    \"music_menu.lua\": \"522357cdebe4cc4b3b23f97e82a6055ec8657f9c2106e4119dc9a397163f8dbb\",\n    \"settings_menu.lua\": \"7f3074f5b2bbf673c5b241e3a07fa5711a09884436e3580a39e19b7cb8da7cde\",\n    \"song_library.lua\": \"c5c7caa4fc5e321928feafa15ff010ed5116cd702323540507197d4f8b0eed4e\"\n  }\n}\n"
+      ]
+    ]
+  }
+]
