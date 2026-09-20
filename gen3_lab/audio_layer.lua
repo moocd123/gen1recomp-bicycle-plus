@@ -139,7 +139,7 @@ function Layer.attach(mod,settings,S)
   local key=tostring(get('bike_song',game)or'original')
   local id
   if key=='original'then
-   id=(Audio.role and Audio.role('cycling'))or282
+   id=(Audio.role and Audio.role('cycling')) or 282
   else
    id=tonumber(key:match('^firered:(%d+)$')or key:match('^fr:(%d+)$'))
   end
