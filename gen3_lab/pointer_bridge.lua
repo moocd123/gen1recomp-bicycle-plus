@@ -50,7 +50,7 @@ function Bridge.attach(mod,picker,services)
   local gx,gy,inside=localPoint(x,y)
   if not gx then if phase=='released'or phase=='cancelled'then captured[id]=nil end;return false end
   if phase=='pressed'and not inside then return false end
-  local ok,used=pcall(page.pointer,page,phase,gx,gy,id);used=ok and used==true
+  local ok,used=pcall(page.pointer,phase,gx,gy,id);used=ok and used==true
   if phase=='pressed'and used then captured[id]=page elseif phase=='released'or phase=='cancelled'then captured[id]=nil end
   return used
  end
@@ -78,7 +78,7 @@ function Bridge.attach(mod,picker,services)
   mod.hooks:wrap('input.key',function(next,g,e)
    local page=currentRawPage()
    if page and e and e.phase=='pressed'then
-    local ok,used=pcall(page.rawKey,page,e.key)
+    local ok,used=pcall(page.rawKey,e.key)
     if ok and used==true then return true end
    end
    return next(g,e)

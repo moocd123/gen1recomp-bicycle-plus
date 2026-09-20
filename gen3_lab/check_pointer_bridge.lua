@@ -1,7 +1,7 @@
 local Bridge=dofile('gen3_lab/pointer_bridge.lua')
 local calls={mousePress=0,mouseMove=0,mouseRelease=0,touchPress=0,touchMove=0,touchRelease=0,page=0,key=0};local page={_autobikeGen3Pointer=true}
-function page:pointer(phase,x,y,id)calls.page=calls.page+1;calls.last={phase,x,y,id};return true end
-function page:rawKey(key)calls.key=calls.key+1;calls.lastKey=key;return true end
+page.pointer=function(phase,x,y,id)calls.page=calls.page+1;calls.last={phase,x,y,id};return true end
+page.rawKey=function(key)calls.key=calls.key+1;calls.lastKey=key;return true end
 local layer={mod=page};local Stack={top=function()return layer end};local picker={active=function()return page end};local game={}
 function game:mousepressed(...)calls.mousePress=calls.mousePress+1;return'mouse-press-chain'end;function game:mousemoved(...)calls.mouseMove=calls.mouseMove+1;return'mouse-move-chain'end
 function game:mousereleased(...)calls.mouseRelease=calls.mouseRelease+1;return'mouse-release-chain'end;function game:touchpressed(...)calls.touchPress=calls.touchPress+1;return'touch-press-chain'end

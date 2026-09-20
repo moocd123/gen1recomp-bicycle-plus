@@ -10,7 +10,7 @@ local page=m.open({options={frameType=4}},'AUTOBIKE+ LAB',rows);local input={pre
 local function tap(k)input.pressed={[k]=true};page.handleInput(input);input.pressed={}end
 ck(Stack.top().mod==page and page._autobikeGen3Pointer,'native stack/pointer flag missing');page.draw();tap('right');ck(chosen==1,'right did not adjust')
 for i=1,60 do page.update(1/60);page.handleInput(input)end;ck(chosen==1,'holding caused repeat')
-page:pointer('pressed',40,58);ck(chosen==0 and page.index==1,'left-side touch did not decrement row');page:pointer('pressed',180,58);ck(chosen==1,'right-side touch did not increment row')
+page.pointer('pressed',40,58);ck(chosen==0 and page.index==1,'left-side touch did not decrement row');page.pointer('pressed',180,58);ck(chosen==1,'right-side touch did not increment row')
 for i=1,9 do tap('down');page.draw()end;ck(page.index==10 and page.scroll==3,'all rows not reachable');tap('down');ck(page.index==11,'CANCEL missing');tap('a');ck(Stack.top()==nil,'CANCEL failed')
 local preview={count=0};page=m.open({options={frameType=4}},'EXACT LONG TITLE FOR SCROLL TEST',rows,{preview=function(game,x,y,scale,timer)preview.count=preview.count+1;preview.x,preview.y,preview.scale,preview.timer=x,y,scale,timer end});page.update(.25);page.draw();ck(preview.count==1 and preview.x==164 and preview.y==72 and preview.scale==2 and preview.timer>0,'appearance preview callback wrong');ck(page.previewError==nil,'preview callback failed');tap('b');ck(not Stack.top(),'B back failed')
 print('PASS '..n..' native Stack/menu/touch/preview assertions; fonts, graphics and windows are doubled.')
