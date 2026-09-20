@@ -77,7 +77,7 @@ function Menu.new(services)
    if bottom<152 then G.rectangle('fill',16,bottom,208,152-bottom)end
    if opts.preview then
     local ok,err=pcall(opts.preview,game,164,72,2,m.timer,m)
-    m.previewError=ok and nil or tostring(err)
+    if ok then m.previewError=nil else m.previewError=tostring(err)end
    end
    G.pop()
   end
