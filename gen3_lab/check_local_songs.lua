@@ -33,6 +33,7 @@ ck(store['music/local/tracks/'..row.id:sub(6)..'.mp3']==bytes,'copy not kept in 
 for path in pairs(store)do ck(path:sub(1,12)=='music/local/','local library escaped beta music/local namespace')end
 local selected,err=api.resolve(row.id);ck(selected and selected.kind=='file'and not err,'local resolve failed')
 local src;src,err=selected.openSource();ck(src and not err,'local source decode failed')
+if src and src.release then src:release()end
 local duplicate,why=api.importBytes(bytes,'Other Name.mp3');ck(duplicate and duplicate.id==row.id and why=='ALREADY IMPORTED','duplicate import handling failed')
 ck(#api.files()==1,'duplicate added a second row')
 ck(api.rename(row.id,'Road Theme.ogg')==true and api.describe(row.id)=='ROAD THEME','rename failed')
