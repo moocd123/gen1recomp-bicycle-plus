@@ -1,0 +1,16 @@
+{
+  "id": "autobike_plus_firered_beta",
+  "name": "AUTOBIKE+ FireRed Test",
+  "version": "0.1.0-beta.1",
+  "api": 2,
+  "entry": "main.lua",
+  "profile": "content",
+  "category": "TOOL",
+  "games": ["firered"],
+  "game_version": ">=0.2.66",
+  "priority": 110,
+  "permissions": ["engine_internals"],
+  "affects_link": false,
+  "experimental": true,
+  "description": "Isolated AUTOBIKE+ FireRed development test. Does not replace the stable bicycle_plus mod."
+}

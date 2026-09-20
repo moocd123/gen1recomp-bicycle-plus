@@ -43,7 +43,7 @@ jobs:
           for edition in red blue yellow gold silver crystal; do
             lua5.3 verification/v1.9.1/check_mode_audio.lua ../engine "$edition"
           done
-      - name: Test new FireRed development components without a game save
+      - name: Test FireRed development components without a game save
         working-directory: source
         run: |
           set -euo pipefail
@@ -51,3 +51,14 @@ jobs:
           lua5.3 gen3_lab/check_native_mount.lua ../engine
           lua5.3 gen3_lab/check_menu.lua ../engine
           lua5.3 gen3_lab/check_shading.lua gen3_lab
+          lua5.3 gen3_lab/check_settings.lua
+          lua5.3 gen3_lab/check_integration.lua
+          python3 - <<'PY'
+          import json
+          m=json.load(open('gen3_lab/beta_manifest.json',encoding='utf-8'))
+          assert m['id']=='autobike_plus_firered_beta'
+          assert m['games']==['firered'] and m['entry']=='main.lua'
+          assert 'github' not in m, 'beta must not opt into stable auto-update'
+          assert m.get('experimental') is True
+          print('PASS isolated FireRed beta manifest gate')
+          PY
