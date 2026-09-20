@@ -19,7 +19,6 @@ function Legacy.init(mod,S)
  S=S or{}
  local Cache=S.Cache or require('src.import.CacheFs')
  local Version=S.Version or require('src.core.GameVersion')
- local Serializer=S.Serializer or require('src.core.SaveSerializer')
  local cache=assert(mod.cache,'FireRed beta requires mod.cache')
  local root='mod_cache/'..mod.id..'/music'
  local foreign={}
@@ -33,6 +32,7 @@ function Legacy.init(mod,S)
  end
  local function decode(bytes)
   if S.decode then return S.decode(bytes)end
+  local Serializer=S.Serializer or require('src.core.SaveSerializer')
   local ok,t,err=pcall(Serializer.decode,bytes,{allowArray=true,allowComments=true,
    maxBytes=8*1024*1024,maxDepth=48,maxNodes=200000,maxStringBytes=2*1024*1024,
    maxTableEntries=100000,rootName='audio cache'})
