@@ -8,6 +8,7 @@ local mod=T.mod(game)
 -- stable-mod sandbox, so mutating only mod.id/path would test the wrong scope.
 mod.id='autobike_plus_firered_beta';mod.path='mods/autobike_plus_firered_beta'
 mod.manifest={id=mod.id,path=mod.path,optional_imports={}}
+mod.exports={}
 local compat=require('src.mods.LegacyCompat').new({modId=mod.id,modPath=mod.path,fs=T.fs,game=function()return game end})
 mod.env=require('src.mods.Sandbox').envFor({modId=mod.id,permissions={engine_internals=true},compat=compat})
 local _,cache=require('src.mods.ImportAccess').new(mod.manifest,T.fs);mod.cache=cache
