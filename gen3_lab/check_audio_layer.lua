@@ -1,15 +1,15 @@
 local root=arg[1]or'gen3_lab'
 local Layer=assert(loadfile(root..'/audio_layer.lua'))()
 local function check(v,msg)if not v then error(msg or'check failed',2)end end
-local function near(a,b,msg)check(math.abs((a or0)-(b or0))<1e-8,msg or(tostring(a)..' ~= '..tostring(b)))end
+local function near(a,b,msg)check(math.abs((a or 0)-(b or 0))<1e-8,msg or(tostring(a)..' ~= '..tostring(b)))end
 local values={riding_music='bicycle',bike_volume=7,bike_filter=0,riding_area_volume=-1,riding_area_filter=-1,
  riding_sfx_volume=-1,riding_sfx_filter=-1,sfx_filter=0,bike_song='original',bike_song_resume=false}
 local settings={get=function(key)return values[key]end}
-local Runtime={safeMode=false,hooks={},events={}};local Version={get=function()return'firered'end,generation=function()return3 end}
+local Runtime={safeMode=false,hooks={},events={}};local Version={get=function()return'firered'end,generation=function()return 3 end}
 local PlayerState={biking=true};local registered={};local Assets={register=function(v)registered[#registered+1]=v end}
 local function soundSource()
  local s={playing=false,paused=false,queues=0,volume=1,filter=nil,released=false,looping=false}
- function s:getFreeBufferCount()return1 end;function s:queue(_)self.queues=self.queues+1;return true end
+ function s:getFreeBufferCount()return 1 end;function s:queue(_)self.queues=self.queues+1;return true end
  function s:play()self.playing=true;self.paused=false end;function s:pause()self.playing=false;self.paused=true end
  function s:stop()self.playing=false;self.paused=false end;function s:isPlaying()return self.playing end
  function s:setLooping(v)self.looping=v==true end;function s:setVolume(v)self.volume=v end
@@ -19,9 +19,9 @@ end
 local se=soundSource();local cry=soundSource();local nativeUpdates,restores,gains,bgmFilters=0,0,0,0
 local Audio={_pack={},_cache={},_bgmVolume=5/7,_sfxVolume=4/7,_filterLevel=1,_seSources={se},_crySource=cry,_fanfareActive=false}
 local originalUpdate=function()nativeUpdates=nativeUpdates+1 end;Audio.update=originalUpdate
-function Audio.role(name)return name=='cycling'and282 or nil end
+function Audio.role(name)return name=='cycling'and 282 or nil end
 function Audio.songInfo(id)if id==282 or id==300 then return{id=id,kind='bgm',loop=true}end end
-function Audio.applyEngineOptions(o)restores=restores+1;Audio._bgmVolume=(o.musicVol or7)/7;Audio._sfxVolume=(o.sfxVol or7)/7;Audio._filterLevel=(o.musicFilter or0)>0 and o.musicFilter or nil end
+function Audio.applyEngineOptions(o)restores=restores+1;Audio._bgmVolume=(o.musicVol or 7)/7;Audio._sfxVolume=(o.sfxVol or 7)/7;Audio._filterLevel=(o.musicFilter or 0)>0 and o.musicFilter or nil end
 function Audio.applyGain()gains=gains+1 end;function Audio.applyBgmFilter()bgmFilters=bgmFilters+1 end
 local starts,renders=0,0;local Player={SAMPLE_RATE=44100,BUFFER_SAMPLES=8192}
 function Player.start(_,_,slot,id)starts=starts+1;slot.songId=id;slot.voices={};return id==282 or id==300 end

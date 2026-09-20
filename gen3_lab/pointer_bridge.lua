@@ -13,11 +13,11 @@ function Bridge.attach(mod,picker,services)
  local captured={}
  local function localPoint(x,y)
   if type(x)~='number'or type(y)~='number'then return nil end
-  local w,h=Display.W or240,Display.H or160
+  local w,h=Display.W or 240,Display.H or 160
   local winW,winH=w,h
   if G and G.getDimensions then local ok,a,b=pcall(G.getDimensions);if ok and a and b then winW,winH=a,b end end
   local sx,ox,oy,pw,ph,sy=Display.fit(winW,winH)
-  sx=tonumber(sx)or1;sy=tonumber(sy)or sx;ox=tonumber(ox)or0;oy=tonumber(oy)or0
+  sx=tonumber(sx) or 1;sy=tonumber(sy) or sx;ox=tonumber(ox) or 0;oy=tonumber(oy) or 0
   if sx<=0 or sy<=0 then return nil end
   local gx,gy=(x-ox)/sx,(y-oy)/sy
   return gx,gy,gx>=0 and gy>=0 and gx<w and gy<h

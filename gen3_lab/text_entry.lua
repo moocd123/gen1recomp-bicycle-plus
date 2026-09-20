@@ -18,7 +18,7 @@ function Entry.new(mod,services)
  local function rect(i)return{15+(i-1)%8*27,55+math.floor((i-1)/8)*15,25,13}end
  local function hit(x,y,r)return x>=r[1]and x<r[1]+r[3]and y>=r[2]and y<r[2]+r[4]end
  function api.open(game,title,initial,maximum,onSave)
-  api.serial=api.serial+1;maximum=math.max(1,math.min(64,tonumber(maximum)or24))
+  api.serial=api.serial+1;maximum=math.max(1,math.min(64,tonumber(maximum) or 24))
   local id='autobike-gen3-text-'..api.serial
   local m={game=game,index=1,buffer=tostring(initial or''):upper():sub(1,maximum),replace=true,
    notice=nil,_autobikeGen3Pointer=true}
@@ -86,7 +86,7 @@ function Entry.new(mod,services)
    G.setColor(0,123/255,197/255,1);G.rectangle('fill',0,0,240,16);G.setColor(1,1,1,1)
    Window.printPx('A: KEY  B: BACK  START: SAVE',8,1,{colors=Font.COLOR.NORMAL})
    Chrome.fixedStdFrame(2,3,26,2);Window.printPx(tostring(title or'SONG NAME'),24,25,{colors=Font.COLOR.NORMAL})
-   local frame=tonumber(Options.block(game.options or{}).frameType)or0
+   local frame=tonumber(Options.block(game.options or{}).frameType) or 0
    Window.userFrame(Window.template(2,7,26,3),frame)
    Window.printPx((m.replace and'> 'or'  ')..m.buffer,22,49,{colors=Font.COLOR.NORMAL})
    for i,k in ipairs(keys)do

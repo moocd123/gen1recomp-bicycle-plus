@@ -7,9 +7,9 @@ function game:mousepressed(...)calls.mousePress=calls.mousePress+1;return'mouse-
 function game:mousereleased(...)calls.mouseRelease=calls.mouseRelease+1;return'mouse-release-chain'end;function game:touchpressed(...)calls.touchPress=calls.touchPress+1;return'touch-press-chain'end
 function game:touchmoved(...)calls.touchMove=calls.touchMove+1;return'touch-move-chain'end;function game:touchreleased(...)calls.touchRelease=calls.touchRelease+1;return'touch-release-chain'end
 local original={mousepressed=game.mousepressed,mousemoved=game.mousemoved,mousereleased=game.mousereleased,touchpressed=game.touchpressed,touchmoved=game.touchmoved,touchreleased=game.touchreleased}
-local releases={};local Assets={register=function(v)releases[#releases+1]=v end};local Display={W=240,H=160,fit=function()return2,10,20,480,320,2 end};local keyHook
+local releases={};local Assets={register=function(v)releases[#releases+1]=v end};local Display={W=240,H=160,fit=function()return 2,10,20,480,320,2 end};local keyHook
 local mod={game=game,hooks={wrap=function(_,name,fn)if name=='input.key'then keyHook=fn end end}}
-local b=Bridge.attach(mod,picker,{Display=Display,Stack=Stack,graphics={getDimensions=function()return640,480 end},Assets=Assets})
+local b=Bridge.attach(mod,picker,{Display=Display,Stack=Stack,graphics={getDimensions=function()return 640,480 end},Assets=Assets})
 local n=0;local function ck(v,m)assert(v,m);n=n+1 end
 local gx,gy,inside=b.coordinates(30,60);ck(inside and gx==10 and gy==20,'coordinate conversion failed')
 local used=game:mousepressed(30,60,1,false);ck(used==true and calls.page==1 and calls.mousePress==0,'inside mouse press not routed');ck(calls.last[1]=='pressed'and calls.last[2]==10 and calls.last[3]==20,'mouse payload wrong')
