@@ -1,6 +1,7 @@
 -- FireRed-only independent cycling audio for the isolated AUTOBIKE+ beta.
 -- The native Game3 BGM worker remains the owner of map/battle/fanfare music;
--- this module renders a second M4A slot into its own QueueableSource.
+-- this module renders either a FireRed M4A slot or imported Gen1/2 ChipSynth
+-- program into a private QueueableSource.
 local Layer={}
 local FILTER_HIGHGAIN={0.4,0.16,0.064}
 
@@ -12,10 +13,9 @@ local function clamp(v,lo,hi,fallback)
  if v>hi then return hi end
  return v
 end
-
 local function sameFilter(a,b)
  if a==nil or b==nil then return a==b end
- if type(a)~='table' or type(b)~='table' then return false end
+ if type(a)~='table'or type(b)~='table'then return false end
  for k,v in pairs(a)do if b[k]~=v then return false end end
  for k,v in pairs(b)do if a[k]~=v then return false end end
  return true
@@ -24,19 +24,22 @@ end
 function Layer.attach(mod,settings,S)
  S=S or{}
  local Version=S.Version or require('src.core.GameVersion')
- assert(Version.get()=='firered' and Version.generation()==3,'FireRed audio layer only')
+ assert(Version.get()=='firered'and Version.generation()==3,'FireRed audio layer only')
  local Audio=S.Audio or require('src.core.game3.audio')
  local Player=S.Player or require('src.core.game3.m4a_player')
+ local ChipSynth=S.ChipSynth or require('src.core.ChipSynth')
+ local Legacy=S.Legacy
  local P=S.PlayerState or require('src.core.game3.player')
  local Runtime=S.Runtime or require('src.mods.Runtime')
  local Assets=S.Assets or require('src.render.Assets')
  local ownerHooks,ownerEvents=Runtime.hooks,Runtime.events
  local currentGame=mod.game
  local disposed=false
- local source,slot,sourceId,sourceKey,paused
+ local source,slot,chipEngine,sourceId,sourceKey,sourceKind,paused
  local profileApplied=false
  local lastError
  local BUFFER_SAMPLES=S.bufferSamples or math.min(4096,Player.BUFFER_SAMPLES or 4096)
+ local CHIP_BUFFER_SAMPLES=S.chipBufferSamples or 2048
  local BUFFER_COUNT=S.bufferCount or 12
  local MAX_FILL=S.maxFill or 2
  local ownedFilters=setmetatable({},{__mode='k'})
@@ -92,16 +95,10 @@ function Layer.attach(mod,settings,S)
    e.applied=false;e.last=nil
    return
   end
-  if not e.applied then
-   local _,original=readFilter(src);e.original=original
-  end
-  if setFilter(src,level)then
-   local _,actual=readFilter(src);e.last=actual;e.applied=true
-  end
+  if not e.applied then local _,original=readFilter(src);e.original=original end
+  if setFilter(src,level)then local _,actual=readFilter(src);e.last=actual;e.applied=true end
  end
- local function restoreOwnedFilters()
-  for src in pairs(ownedFilters)do ownedFilter(src,0)end
- end
+ local function restoreOwnedFilters()for src in pairs(ownedFilters)do ownedFilter(src,0)end end
  local function effectiveSfxFilter(game,riding)
   if riding then
    local v=tonumber(get('riding_sfx_filter',game))
@@ -111,9 +108,7 @@ function Layer.attach(mod,settings,S)
  end
  local function applySfxFilters(game,riding)
   local level=effectiveSfxFilter(game,riding)
-  for _,src in ipairs(Audio._seSources or{})do
-   if src~=Audio._fanfareSource then ownedFilter(src,level)end
-  end
+  for _,src in ipairs(Audio._seSources or{})do if src~=Audio._fanfareSource then ownedFilter(src,level)end end
   if Audio._crySource then ownedFilter(Audio._crySource,level)end
  end
 
@@ -124,7 +119,7 @@ function Layer.attach(mod,settings,S)
  end
  local function destroyOverlay()
   releaseSource(source)
-  source,slot,sourceId,sourceKey,paused=nil,nil,nil,nil,nil
+  source,slot,chipEngine,sourceId,sourceKey,sourceKind,paused=nil,nil,nil,nil,nil,nil,nil
  end
  local function pauseOverlay()
   if not source then return end
@@ -137,60 +132,90 @@ function Layer.attach(mod,settings,S)
  end
  local function resolveSong(game)
   local key=tostring(get('bike_song',game)or'original')
-  local id
-  if key=='original'then
-   id=(Audio.role and Audio.role('cycling')) or 282
-  else
-   id=tonumber(key:match('^firered:(%d+)$')or key:match('^fr:(%d+)$'))
+  if key=='original'or key:match('^firered:%d+$')or key:match('^fr:%d+$')then
+   local id
+   if key=='original'then id=(Audio.role and Audio.role('cycling'))or 282
+   else id=tonumber(key:match('(%d+)$'))end
+   if not id then return nil,'unsupported FireRed bicycle song'end
+   local info=Audio.songInfo and Audio.songInfo(id)
+   if not info or info.kind~='bgm'then return nil,'selected FireRed song is unavailable'end
+   return{kind='m4a',id=id,key=key}
   end
-  if not id then return nil,key,'unsupported FireRed bicycle song' end
-  local info=Audio.songInfo and Audio.songInfo(id)
-  if not info or info.kind~='bgm'then return nil,key,'selected FireRed song is unavailable' end
-  return id,key
+  if key:match('^game:[a-z]+:[%w_]+$')and Legacy and Legacy.resolve then
+   local selected,err=Legacy.resolve(key,game)
+   if selected and selected.kind=='chip'then
+    return{kind='chip',id=selected.label,key=key,selected=selected}
+   end
+   return nil,err or'unsupported imported-game bicycle song'
+  end
+  return nil,'unsupported FireRed bicycle song'
  end
- local function newQueueableSource()
-  if S.newQueueableSource then return S.newQueueableSource(Player.SAMPLE_RATE,16,2,BUFFER_COUNT)end
+ local function newQueueableSource(rate)
+  if S.newQueueableSource then return S.newQueueableSource(rate,16,2,BUFFER_COUNT)end
   if love and love.audio and love.audio.newQueueableSource then
-   return love.audio.newQueueableSource(Player.SAMPLE_RATE,16,2,BUFFER_COUNT)
+   return love.audio.newQueueableSource(rate,16,2,BUFFER_COUNT)
   end
   return nil,'queueable audio unavailable'
  end
- local function makeOverlay(id,key)
+ local function makeOverlay(desc)
   destroyOverlay();lastError=nil
-  if not(Audio._pack and Audio._cache)then lastError='FireRed audio pack unavailable';return false end
-  local made,err
-  local ok,res,extra=pcall(newQueueableSource)
-  if ok then made,err=res,extra else err=res end
+  local rate=desc.kind=='chip'and ChipSynth.SAMPLE_RATE or Player.SAMPLE_RATE
+  if desc.kind=='m4a'and not(Audio._pack and Audio._cache)then lastError='FireRed audio pack unavailable';return false end
+  local ok,made,err=pcall(newQueueableSource,rate)
+  if not ok then err=made;made=nil end
   if not made then lastError=tostring(err or'queueable audio unavailable');return false end
-  local nextSlot={voices={}}
-  local started,value=pcall(Player.start,Audio._pack,Audio._cache,nextSlot,id,{forceSeq=true})
-  if not started or value~=true then
-   releaseSource(made);lastError=tostring(started and'could not start FireRed song'or value);return false
+  if desc.kind=='m4a'then
+   local nextSlot={voices={}}
+   local started,value=pcall(Player.start,Audio._pack,Audio._cache,nextSlot,desc.id,{forceSeq=true})
+   if not started or value~=true then
+    releaseSource(made);lastError=tostring(started and'could not start FireRed song'or value);return false
+   end
+   slot=nextSlot
+  elseif desc.kind=='chip'then
+   local selected=desc.selected
+   local started,value=pcall(ChipSynth.newEngine,selected.data,selected.def,{allowLoops=true})
+   if not started or not value then
+    releaseSource(made);lastError=tostring(started and'could not start imported-game song'or value);return false
+   end
+   chipEngine=value
+  else
+   releaseSource(made);lastError='unsupported cycling audio backend';return false
   end
-  source,slot,sourceId,sourceKey,paused=made,nextSlot,id,key,false
+  source,sourceId,sourceKey,sourceKind,paused=made,desc.id,desc.key,desc.kind,false
   return true
  end
- local function overlayVolume(game)
-  return clamp(get('bike_volume',game),0,7,7)/7
- end
- local function overlayFilter(game)
-  return clamp(get('bike_filter',game),0,3,0)
- end
+ local function overlayVolume(game)return clamp(get('bike_volume',game),0,7,7)/7 end
+ local function overlayFilter(game)return clamp(get('bike_filter',game),0,3,0)end
  local function configureOverlay(game)
   if not source then return end
   if source.setVolume then pcall(source.setVolume,source,overlayVolume(game))end
   setFilter(source,overlayFilter(game))
  end
+ local function nextBuffer()
+  if sourceKind=='chip'then
+   if chipEngine.finished and chipEngine:finished()then return nil,'finished'end
+   local rendered,data=pcall(ChipSynth.soundData,chipEngine,CHIP_BUFFER_SAMPLES,2)
+   if not rendered or not data then return nil,tostring(data or'cycling chip render failed')end
+   return data
+  end
+  local rendered,data=pcall(Player.renderBuffered,slot,BUFFER_SAMPLES,{master=1,sampleRate=Player.SAMPLE_RATE})
+  if not rendered or not data then return nil,tostring(data or'cycling render failed')end
+  return data
+ end
  local function fillOverlay(game)
-  if not(source and slot)then return false end
+  if not source or(sourceKind=='m4a'and not slot)or(sourceKind=='chip'and not chipEngine)then return false end
   configureOverlay(game)
   local ok,free=pcall(source.getFreeBufferCount,source)
   if not ok or type(free)~='number'then lastError='cycling audio queue unavailable';destroyOverlay();return false end
   free=math.min(math.max(0,free),MAX_FILL)
   while free>0 do
-   local rendered,data=pcall(Player.renderBuffered,slot,BUFFER_SAMPLES,{master=1,sampleRate=Player.SAMPLE_RATE})
-   if not rendered or not data then lastError=tostring(data or'cycling render failed');destroyOverlay();return false end
+   local data,err=nextBuffer()
+   if not data then
+    if err=='finished'then break end
+    lastError=err;destroyOverlay();return false
+   end
    local queued,q=pcall(source.queue,source,data)
+   if data.release then pcall(data.release,data)end
    if not queued or q==false then lastError=tostring(queued and'cycling queue refused buffer'or q);destroyOverlay();return false end
    free=free-1
   end
@@ -203,9 +228,11 @@ function Layer.attach(mod,settings,S)
   return true
  end
  local function ensureOverlay(game)
-  local id,key,err=resolveSong(game)
-  if not id then lastError=err;destroyOverlay();return false end
-  if not source or sourceId~=id or sourceKey~=key then if not makeOverlay(id,key)then return false end end
+  local desc,err=resolveSong(game)
+  if not desc then lastError=err;destroyOverlay();return false end
+  if not source or sourceId~=desc.id or sourceKey~=desc.key or sourceKind~=desc.kind then
+   if not makeOverlay(desc)then return false end
+  end
   return fillOverlay(game)
  end
 
@@ -224,62 +251,48 @@ function Layer.attach(mod,settings,S)
  end
  local function applyRidingProfile(game,mode,overlayReady)
   local area=ridingLevel(game,'riding_area_volume','musicVol')
-  if mode=='bicycle' and overlayReady then area=0 end
+  if mode=='bicycle'and overlayReady then area=0 end
   local sfx=ridingLevel(game,'riding_sfx_volume','sfxVol')
   local filter=ridingFilter(game,'riding_area_filter')
-  Audio._bgmVolume=area/7
-  Audio._sfxVolume=sfx/7
-  Audio._filterLevel=filter>0 and filter or nil
+  Audio._bgmVolume=area/7;Audio._sfxVolume=sfx/7;Audio._filterLevel=filter>0 and filter or nil
   if Audio.applyGain then pcall(Audio.applyGain)end
   if Audio.applyBgmFilter then pcall(Audio.applyBgmFilter)end
   profileApplied=true
  end
 
  function api.update(game,dt)
-  currentGame=game or currentGame or mod.game
-  game=currentGame
-  if not active()then
-   suspendOverlay(game);restoreNativeProfile(game);restoreOwnedFilters();return false
-  end
-  local riding=game and game.phase=='field' and P.biking==true
+  currentGame=game or currentGame or mod.game;game=currentGame
+  if not active()then suspendOverlay(game);restoreNativeProfile(game);restoreOwnedFilters();return false end
+  local riding=game and game.phase=='field'and P.biking==true
   local fanfare=Audio._fanfareActive==true
   local mode=tostring(get('riding_music',game)or'bicycle')
   if mode~='area'and mode~='bicycle'and mode~='both'then mode='bicycle'end
   local overlayReady=false
-  if riding and not fanfare and mode~='area'then overlayReady=ensureOverlay(game)
-  else suspendOverlay(game)end
-  if riding and not fanfare then applyRidingProfile(game,mode,overlayReady)
-  else restoreNativeProfile(game)end
+  if riding and not fanfare and mode~='area'then overlayReady=ensureOverlay(game)else suspendOverlay(game)end
+  if riding and not fanfare then applyRidingProfile(game,mode,overlayReady)else restoreNativeProfile(game)end
   applySfxFilters(game,riding and not fanfare)
-  api.riding=riding;api.mode=mode;api.overlayReady=overlayReady;api.songId=sourceId;api.error=lastError
+  api.riding=riding;api.mode=mode;api.overlayReady=overlayReady;api.songId=sourceId;api.songKind=sourceKind;api.error=lastError
   return true
  end
  function api.status()
   return{riding=api.riding==true,mode=api.mode,overlay=source~=nil,ready=api.overlayReady==true,
-   paused=paused==true,songId=sourceId,songKey=sourceKey,error=lastError}
+   paused=paused==true,songId=sourceId,songKey=sourceKey,songKind=sourceKind,error=lastError}
  end
- function api.stop()
-  destroyOverlay();restoreNativeProfile(currentGame);return true
- end
+ function api.stop()destroyOverlay();restoreNativeProfile(currentGame);return true end
  function api.dispose()
   if disposed then return end;disposed=true
   destroyOverlay();restoreNativeProfile(currentGame);restoreOwnedFilters()
   if Audio.update==api._wrapper then Audio.update=api._priorUpdate end
  end
-
  api._priorUpdate=Audio.update
  api._wrapper=function(dt)
-  local out={api._priorUpdate(dt)}
-  api.update(currentGame or mod.game,dt)
-  return table.unpack(out)
+  local out={api._priorUpdate(dt)};api.update(currentGame or mod.game,dt);return table.unpack(out)
  end
  Audio.update=api._wrapper
  if mod.events and mod.events.on then mod.events:on('game.ready',function(ev)currentGame=ev and ev.game or mod.game or currentGame end)end
  if Assets and Assets.register then Assets.register({release=api.dispose})end
  if mod.hooks and mod.hooks.wrap then
-  mod.hooks:wrap('core.quit_to_launcher',function(next,...)
-   api.dispose();return next(...)
-  end,90)
+  mod.hooks:wrap('core.quit_to_launcher',function(next,...)api.dispose();return next(...)end,90)
  end
  mod.exports.gen3Audio=api
  return api
