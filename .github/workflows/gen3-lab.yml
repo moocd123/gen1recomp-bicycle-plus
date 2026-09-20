@@ -55,7 +55,10 @@ jobs:
       - name: FireRed current-song catalogue
         working-directory: source
         run: lua5.3 gen3_lab/check_song_catalog.lua
-      - name: FireRed current-song menu
+      - name: Imported Gen1/2 song source bridge
+        working-directory: source
+        run: lua5.3 gen3_lab/check_legacy_songs.lua
+      - name: FireRed current/imported-song menu
         working-directory: source
         run: lua5.3 gen3_lab/check_song_menu.lua
       - name: FireRed shade transform
