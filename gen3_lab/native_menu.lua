@@ -11,11 +11,11 @@ function Menu.new(services)
  local G=S.graphics or love.graphics
  local api={serial=0}
  local function value(v)return type(v)=='function'and v()or v end
- function api.open(game,title,rows)
-  assert(game and type(rows)=='table','Menu context required')
+ function api.open(game,title,rows,opts)
+  assert(game and type(rows)=='table','Menu context required');opts=opts or{}
   api.serial=api.serial+1
   local id='autobike-gen3-lab-'..api.serial
-  local m={index=1,scroll=0,timer=0,rows=rows}
+  local m={index=1,scroll=0,timer=0,rows=rows,previewError=nil}
   local function close()Stack.pop(id)end
   local function visible()
    m.index=math.max(1,math.min(m.index,#rows+1))
@@ -60,13 +60,14 @@ function Menu.new(services)
    Chrome.fixedStdFrame(2,3,26,2);clipText(title,24,25,192,false)
    local frame=tonumber(Options.block(game.options or{}).frameType)or 0
    Window.userFrame(Window.template(2,7,26,12),frame)
+   local rightEdge=opts.preview and 154 or 216
    for slot=1,7 do
     local i=m.scroll+slot
     if i<=#rows+1 then
      local row=rows[i];local y=58+(slot-1)*13;local selected=i==m.index
      local right=row and value(row.value)
-     local col=right and(216-Font.measure(tostring(right)))or 216
-     if right then clipText(right,col,y,216-col,selected)end
+     local col=right and(rightEdge-Font.measure(tostring(right)))or rightEdge
+     if right then clipText(right,col,y,math.max(1,rightEdge-col),selected)end
      clipText(row and value(row.label)or'CANCEL',24,y,math.max(12,col-30),selected)
     end
    end
@@ -74,6 +75,10 @@ function Menu.new(services)
    G.setColor(0,0,0,2/16)
    if top>56 then G.rectangle('fill',16,56,208,top-56)end
    if bottom<152 then G.rectangle('fill',16,bottom,208,152-bottom)end
+   if opts.preview then
+    local ok,err=pcall(opts.preview,game,164,72,2,m.timer,m)
+    m.previewError=ok and nil or tostring(err)
+   end
    G.pop()
   end
   Stack.push(id,m,{hideBelow=true});m.close=close;return m

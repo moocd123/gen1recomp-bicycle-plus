@@ -60,7 +60,8 @@ function Integration.attach(mod,S)
    if S.invalidatePaint then S.invalidatePaint()end
    return ok
   end}
-  return menu.open(game,'BIKE APPEARANCE',rows)
+  local opts=S.drawAppearancePreview and{preview=S.drawAppearancePreview}or nil
+  return menu.open(game,'BIKE APPEARANCE',rows,opts)
  end
  function api.openAudio(game)
   local rows={

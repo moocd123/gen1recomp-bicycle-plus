@@ -13,6 +13,10 @@ return function(mod)
   settings=settings,menu=menu,Machine=module('mount'),NativeMount=module('native_mount'),
   openColourPart=function(game,key,label)return picker.open(game,key,label)end,
   invalidatePaint=function()if paint and paint.invalidate then paint.invalidate()end end,
+  drawAppearancePreview=function(game,x,y,scale,timer)
+   if paint and paint.drawPreview then return paint.drawPreview(game,x,y,scale,timer)end
+   return false
+  end,
  })
  paint=module('player_paint').attach(mod,module('parts'),module('shading'),settings)
  integration.paint=paint;integration.colourPicker=picker;integration.pointerBridge=pointer

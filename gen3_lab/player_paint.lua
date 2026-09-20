@@ -18,6 +18,12 @@ function Paint.attach(mod,Parts,Shade,settings,S)
  local lastError,lastCount
  local KEYS={frame='bike_frame_colour',tyres='bike_tyres_colour',rims='bike_rims_colour',
   spokes='bike_spokes_colour',handlebars='bike_handlebars_colour'}
+ local PREVIEW={
+  {0,'down'},{3,'down'},{4,'down'},
+  {2,'left'},{7,'left'},{8,'left'},
+  {2,'right'},{7,'right'},{8,'right'},
+  {1,'up'},{5,'up'},{6,'up'},
+ }
  local function currentGame()
   return (GameRuntime and(GameRuntime._game or(GameRuntime.getGame and GameRuntime.getGame())))or mod.game
  end
@@ -34,6 +40,12 @@ function Paint.attach(mod,Parts,Shade,settings,S)
   if oy==0 and P.jumpSpriteY then oy=P.jumpSpriteY()or 0 end
   return close(px,(P.px or 0)+ox)and close(py,(P.py or 0)+oy)
    and tostring(facing or'down')==tostring(P.facing or'down')
+ end
+ local function bikeGraphicsId(game)
+  local session=game and game.session;local save=game and game.save
+  local gender=(session and session.gender)or(save and(save.gender or(save.player and save.player.gender)))
+  local female=gender=='female'or gender=='F'or gender==1
+  return female and(tonumber(S.femaleBikeId)or 8)or(tonumber(S.maleBikeId)or 1)
  end
  local function rgb(v)
   if v=='original'or type(v)~='string'then return v end
@@ -117,6 +129,21 @@ function Paint.attach(mod,Parts,Shade,settings,S)
  local api={}
  function api.invalidate()for k,e in pairs(cache)do releaseEntry(e);cache[k]=nil end;lastError=nil end
  function api.status()return{active=active(),error=lastError,paintedPixels=lastCount}end
+ function api.drawPreview(game,x,y,scale,timer)
+  if not active()then return false end
+  game=game or currentGame();if not game then return false end
+  local gid=bikeGraphicsId(game);local spr=Ow.get(gid);if not spr then return false end
+  local image=painted(gid,spr,game);if image==false or image==nil then image=spr.image end
+  if not image then return false end
+  scale=math.max(1,tonumber(scale)or 2);x=tonumber(x)or 0;y=tonumber(y)or 0
+  local at=math.floor(math.max(0,tonumber(timer)or 0)*6)%#PREVIEW+1
+  local pose=PREVIEW[at];local frame,flip=Ow.pose(spr,pose[2],false,false,{frame=pose[1]})
+  local q=spr.quads[frame];if not q then return false end
+  G.setColor(1,1,1,1)
+  if flip then G.draw(image,q,x+spr.width*scale,y,0,-scale,scale)
+  else G.draw(image,q,x,y,0,scale,scale)end
+  return true
+ end
  function api.dispose()
   if disposed then return end;disposed=true;api.invalidate()
   if Ow.draw==wrappedDraw then Ow.draw=priorDraw end
