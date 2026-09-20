@@ -1,0 +1,45 @@
+name: Gen 3 compatibility lab (no release)
+on:
+  push:
+    branches: [gen3-lab]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: autobike-gen3-lab
+  cancel-in-progress: false
+jobs:
+  inspect:
+    if: github.ref == 'refs/heads/gen3-lab'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Read exact lab and engine sources
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          git clone --no-checkout "https://github.com/${REPO}.git" source
+          git -C source checkout --detach "$SOURCE_SHA"
+          git clone --depth 1 --filter=blob:none --sparse --branch v0.2.66 https://github.com/bryanthaboi/gen1recomp.git engine
+          test "$(git -C engine rev-parse HEAD)" = d70ef7c40e4166b82ed8da692423f010f4406e1b
+          git -C engine sparse-checkout set src data docs tools tests
+      - name: Inspect actual Gen 3 integration and keep production source unchanged
+        run: python3 source/gen3_lab/inspect_engine.py engine source
+      - name: Install test runner
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends lua5.3
+      - name: Existing source checks on the new engine (no releases or save imports)
+        working-directory: source
+        run: |
+          set -euo pipefail
+          for file in *.lua; do luac5.3 -p "$file"; done
+          lua5.3 verification/v1.9.3/check_release.lua ../engine
+          lua5.3 verification/v1.9.3/check_options.lua ../engine
+          lua5.3 verification/v1.9.3/check_regions.lua ../engine
+          lua5.3 verification/v1.9.2/check_first_ride.lua ../engine
+          for edition in red blue yellow gold silver crystal; do
+            lua5.3 verification/v1.9.1/check_mode_audio.lua ../engine "$edition"
+          done
