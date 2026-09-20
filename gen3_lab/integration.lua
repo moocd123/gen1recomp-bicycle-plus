@@ -79,7 +79,10 @@ function Integration.attach(mod,S)
     step=function(d)return step(game,'bike_volume',0,7,d)end},
    {label='CYCLING MUSIC FILTER',value=function()return filter(settings.get('bike_filter',game),false)end,
     step=function(d)return step(game,'bike_filter',0,3,d)end},
-   {label='BIKE SONG',value=function()return tostring(settings.get('bike_song',game)or'original'):upper()end,
+   {label='BIKE SONG',value=function()
+     if S.describeSong then return S.describeSong(game,settings)end
+     return tostring(settings.get('bike_song',game)or'original'):upper()
+    end,
     activate=S.openSong and function()return S.openSong(game,settings)end or nil},
    {label='ON MOUNT',value=function()return settings.get('bike_song_resume',game)and'RESUME'or'RESTART'end,
     step=function()return set(game,'bike_song_resume',not settings.get('bike_song_resume',game))end},

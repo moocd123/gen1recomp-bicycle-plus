@@ -52,6 +52,12 @@ jobs:
       - name: FireRed native menus
         working-directory: source
         run: lua5.3 gen3_lab/check_menu.lua ../engine
+      - name: FireRed current-song catalogue
+        working-directory: source
+        run: lua5.3 gen3_lab/check_song_catalog.lua
+      - name: FireRed current-song menu
+        working-directory: source
+        run: lua5.3 gen3_lab/check_song_menu.lua
       - name: FireRed shade transform
         working-directory: source
         run: lua5.3 gen3_lab/check_shading.lua gen3_lab
