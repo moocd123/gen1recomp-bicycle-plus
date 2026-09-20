@@ -1,7 +1,7 @@
 -- FireRed-only independent cycling audio for the isolated AUTOBIKE+ beta.
 -- The native Game3 BGM worker remains the owner of map/battle/fanfare music;
--- this module renders either a FireRed M4A slot or imported Gen1/2 ChipSynth
--- program into a private QueueableSource.
+-- this module renders FireRed M4A, imported Gen1/2 ChipSynth, or a validated
+-- local audio file on a private source.
 local Layer={}
 local FILTER_HIGHGAIN={0.4,0.16,0.064}
 
@@ -29,6 +29,7 @@ function Layer.attach(mod,settings,S)
  local Player=S.Player or require('src.core.game3.m4a_player')
  local ChipSynth=S.ChipSynth or require('src.core.ChipSynth')
  local Legacy=S.Legacy
+ local Local=S.Local
  local P=S.PlayerState or require('src.core.game3.player')
  local Runtime=S.Runtime or require('src.mods.Runtime')
  local Assets=S.Assets or require('src.render.Assets')
@@ -148,6 +149,13 @@ function Layer.attach(mod,settings,S)
    end
    return nil,err or'unsupported imported-game bicycle song'
   end
+  if key:match('^file:%x+$')and Local and Local.resolve then
+   local selected,err=Local.resolve(key,game)
+   if selected and selected.kind=='file'and selected.openSource then
+    return{kind='file',id=key,key=key,selected=selected}
+   end
+   return nil,err or'unsupported local bicycle song'
+  end
   return nil,'unsupported FireRed bicycle song'
  end
  local function newQueueableSource(rate)
@@ -159,6 +167,13 @@ function Layer.attach(mod,settings,S)
  end
  local function makeOverlay(desc)
   destroyOverlay();lastError=nil
+  if desc.kind=='file'then
+   local opened,made,err=pcall(desc.selected.openSource)
+   if not opened or not made then lastError=tostring(opened and(err or'could not open imported audio')or made);return false end
+   if made.setLooping then pcall(made.setLooping,made,true)end
+   source,sourceId,sourceKey,sourceKind,paused=made,desc.id,desc.key,'file',false
+   return true
+  end
   local rate=desc.kind=='chip'and ChipSynth.SAMPLE_RATE or Player.SAMPLE_RATE
   if desc.kind=='m4a'and not(Audio._pack and Audio._cache)then lastError='FireRed audio pack unavailable';return false end
   local ok,made,err=pcall(newQueueableSource,rate)
@@ -191,6 +206,16 @@ function Layer.attach(mod,settings,S)
   if source.setVolume then pcall(source.setVolume,source,overlayVolume(game))end
   setFilter(source,overlayFilter(game))
  end
+ local function ensurePlaying()
+  if not source then return false end
+  if paused then paused=false end
+  local playing=false
+  if source.isPlaying then local p,v=pcall(source.isPlaying,source);playing=p and v==true end
+  if not playing and source.play then
+   local p=pcall(source.play,source);if not p then lastError='cycling source could not play';destroyOverlay();return false end
+  end
+  return true
+ end
  local function nextBuffer()
   if sourceKind=='chip'then
    if chipEngine.finished and chipEngine:finished()then return nil,'finished'end
@@ -203,8 +228,10 @@ function Layer.attach(mod,settings,S)
   return data
  end
  local function fillOverlay(game)
-  if not source or(sourceKind=='m4a'and not slot)or(sourceKind=='chip'and not chipEngine)then return false end
+  if not source then return false end
   configureOverlay(game)
+  if sourceKind=='file'then return ensurePlaying()end
+  if(sourceKind=='m4a'and not slot)or(sourceKind=='chip'and not chipEngine)then return false end
   local ok,free=pcall(source.getFreeBufferCount,source)
   if not ok or type(free)~='number'then lastError='cycling audio queue unavailable';destroyOverlay();return false end
   free=math.min(math.max(0,free),MAX_FILL)
@@ -219,13 +246,7 @@ function Layer.attach(mod,settings,S)
    if not queued or q==false then lastError=tostring(queued and'cycling queue refused buffer'or q);destroyOverlay();return false end
    free=free-1
   end
-  if paused then paused=false end
-  local playing=false
-  if source.isPlaying then local p,v=pcall(source.isPlaying,source);playing=p and v==true end
-  if not playing and source.play then
-   local p=pcall(source.play,source);if not p then lastError='cycling source could not play';destroyOverlay();return false end
-  end
-  return true
+  return ensurePlaying()
  end
  local function ensureOverlay(game)
   local desc,err=resolveSong(game)

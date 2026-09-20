@@ -9,7 +9,8 @@ return function(mod)
  local picker=module('colour_picker').new(mod,settings)
  local pointer=module('pointer_bridge').attach(mod,picker)
  local legacy=module('legacy_songs').init(mod)
- local songMenu=module('song_menu').new(mod,settings,menu,module('song_catalog'),{Legacy=legacy})
+ local localSongs=module('local_songs').init(mod)
+ local songMenu=module('song_menu').new(mod,settings,menu,module('song_catalog'),{Legacy=legacy,Local=localSongs})
  local paint
  local integration=module('integration').attach(mod,{
   settings=settings,menu=menu,Machine=module('mount'),NativeMount=module('native_mount'),
@@ -23,14 +24,15 @@ return function(mod)
   end,
  })
  paint=module('player_paint').attach(mod,module('parts'),module('shading'),settings)
- local audio=module('audio_layer').attach(mod,settings,{Legacy=legacy})
+ local audio=module('audio_layer').attach(mod,settings,{Legacy=legacy,Local=localSongs})
  integration.paint=paint;integration.colourPicker=picker;integration.pointerBridge=pointer
- integration.audio=audio;integration.songMenu=songMenu;integration.legacySongs=legacy
+ integration.audio=audio;integration.songMenu=songMenu;integration.legacySongs=legacy;integration.localSongs=localSongs
  mod.exports.playerPaint=paint
  mod.exports.colourPicker=picker
  mod.exports.pointerBridge=pointer
  mod.exports.gen3Audio=audio
  mod.exports.gen3SongMenu=songMenu
  mod.exports.gen3LegacySongs=legacy
+ mod.exports.gen3LocalSongs=localSongs
  mod.exports.beta=integration
 end

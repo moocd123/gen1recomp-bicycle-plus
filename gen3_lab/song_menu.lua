@@ -1,10 +1,11 @@
--- Gen 3-native FireRed song browser. Current FireRed songs and already-imported
--- Gen 1/2 soundtracks share one selector. Local audio files are added separately.
+-- Gen 3-native FireRed song browser. Current FireRed songs, already-imported
+-- Gen 1/2 soundtracks and this beta's isolated local files share one selector.
 local SongMenu={}
 function SongMenu.new(mod,settings,menu,Catalog,services)
  local S=services or{}
  local Audio=S.Audio or require('src.core.game3.audio')
  local Legacy=S.Legacy
+ local Local=S.Local
  local api={}
  local function selected(game)return settings.get('bike_song',game)or'original'end
  local function choose(game,key)return settings.set(game,'bike_song',key)end
@@ -13,7 +14,8 @@ function SongMenu.new(mod,settings,menu,Catalog,services)
   if key=='original'or key:match('^firered:%d+$')or key:match('^fr:%d+$')then
    return Catalog.describe(key)
   end
-  if Legacy and Legacy.describe then return Legacy.describe(key)or'MISSING SONG'end
+  if Legacy and Legacy.describe then local v=Legacy.describe(key);if v then return v end end
+  if Local and Local.describe then local v=Local.describe(key);if v then return v end end
   return'MISSING SONG'
  end
  function api.openCurrent(game)
@@ -57,6 +59,19 @@ function SongMenu.new(mod,settings,menu,Catalog,services)
   if #rows==0 then rows[1]={label='NO GEN 1 OR 2 IMPORTS FOUND'}end
   return menu.open(game,'OTHER GAME SONGS',rows)
  end
+ function api.openLocal(game)
+  local rows={}
+  if Local and Local.files then
+   for _,entry in ipairs(Local.files())do
+    local row=entry
+    rows[#rows+1]={label=(row.missing and'MISSING: 'or'')..row.name,
+     value=function()return selected(game)==row.id and'ON'or nil end,
+     activate=not row.missing and function()return choose(game,row.id)end or nil}
+   end
+  end
+  if #rows==0 then rows[1]={label='NO IMPORTED AUDIO'}end
+  return menu.open(game,'IMPORTED SONGS',rows)
+ end
  function api.open(game)
   local rows={
    {label='ORIGINAL BICYCLE THEME',
@@ -66,6 +81,9 @@ function SongMenu.new(mod,settings,menu,Catalog,services)
   }
   if Legacy then
    rows[#rows+1]={label='OTHER IMPORTED GAMES',activate=function()return api.openLegacy(game)end}
+  end
+  if Local then
+   rows[#rows+1]={label='IMPORTED SONGS',activate=function()return api.openLocal(game)end}
   end
   return menu.open(game,'BIKE SONG',rows)
  end

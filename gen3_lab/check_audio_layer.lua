@@ -15,13 +15,14 @@ local registered={}
 local Assets={register=function(v)registered[#registered+1]=v end}
 
 local function soundSource()
- local s={playing=false,paused=false,queues=0,volume=1,filter=nil,released=false}
+ local s={playing=false,paused=false,queues=0,volume=1,filter=nil,released=false,looping=false}
  function s:getFreeBufferCount()return 1 end
  function s:queue(_)self.queues=self.queues+1;return true end
  function s:play()self.playing=true;self.paused=false end
  function s:pause()self.playing=false;self.paused=true end
  function s:stop()self.playing=false;self.paused=false end
  function s:isPlaying()return self.playing end
+ function s:setLooping(v)self.looping=v==true end
  function s:setVolume(v)self.volume=v end
  function s:setFilter(v)self.filter=v end
  function s:getFilter()return self.filter end
@@ -69,13 +70,20 @@ local Legacy={resolve=function(key)
  if key=='game:red:Music_Route1'then return{kind='chip',label='Music_Route1',data={tag='red'},def={label='Music_Route1'}}end
  return nil,'missing legacy song'
 end}
+local localOpens=0;local localSources={}
+local Local={resolve=function(key)
+ if key~='file:'..string.rep('a',64)then return nil,'missing local song'end
+ return{kind='file',key=key,name='LOCAL TEST',openSource=function()
+  localOpens=localOpens+1;local s=soundSource();localSources[#localSources+1]=s;return s
+ end}
+end}
 local made={};local madeRates={}
 local function newQueueableSource(rate)
  local s=soundSource();made[#made+1]=s;madeRates[#madeRates+1]=rate;return s
 end
 local game={phase='field',options={musicVol=5,sfxVol=4,musicFilter=1}}
 local mod={id='autobike_plus_firered_beta',game=game,exports={},events={on=function()end},hooks={wrap=function()end}}
-local api=Layer.attach(mod,settings,{Version=Version,Audio=Audio,Player=Player,ChipSynth=ChipSynth,Legacy=Legacy,PlayerState=PlayerState,
+local api=Layer.attach(mod,settings,{Version=Version,Audio=Audio,Player=Player,ChipSynth=ChipSynth,Legacy=Legacy,Local=Local,PlayerState=PlayerState,
  Runtime=Runtime,Assets=Assets,newQueueableSource=newQueueableSource,bufferSamples=128,chipBufferSamples=64,maxFill=1})
 check(Audio.update~=originalUpdate,'layer wraps native Audio.update')
 
@@ -138,6 +146,22 @@ local chipSource=made[#made]
 values.bike_song_resume=true;PlayerState.biking=false;Audio.update(1/60);check(chipSource.paused,'legacy overlay pauses for resume')
 PlayerState.biking=true;Audio.update(1/60);check(chipStarts==1 and chipSource.playing,'legacy sequencer resumes without restart')
 
+-- Validated local audio uses a normal private streaming Source, not the native
+-- Game3 worker or a queueable synth source. Resume/restart stay identical.
+local localKey='file:'..string.rep('a',64)
+values.bike_song_resume=false;values.bike_song=localKey;PlayerState.biking=true
+local queuesBefore=#made;Audio.update(1/60)
+local fileSource=localSources[#localSources]
+check(api.status().ready and api.status().songKind=='file'and api.status().songId==localKey,'local song did not select file backend')
+check(localOpens==1 and fileSource and fileSource.playing and fileSource.looping,'local source did not open/play/loop')
+check(#made==queuesBefore,'local song incorrectly allocated queueable native/synth source')
+near(fileSource.volume,2/7,'local song did not share bicycle volume')
+check(fileSource.filter and fileSource.filter.highgain==0.16,'local song did not share bicycle filter')
+values.bike_song_resume=true;PlayerState.biking=false;Audio.update(1/60);check(fileSource.paused,'local source did not pause for resume')
+PlayerState.biking=true;Audio.update(1/60);check(localOpens==1 and fileSource.playing,'local source did not resume without reopening')
+values.bike_song_resume=false;PlayerState.biking=false;Audio.update(1/60);PlayerState.biking=true;Audio.update(1/60)
+check(localOpens==2 and localSources[#localSources]~=fileSource,'local restart did not reopen source')
+
 -- Global SFX filter works off-bike and does not overwrite a newer external filter.
 PlayerState.biking=false;values.sfx_filter=2;Audio.update(1/60)
 check(se.filter and se.filter.highgain==0.16,'off-bike SFX filter applies')
@@ -150,4 +174,4 @@ check(Audio.update==originalUpdate,'dispose restores native Audio.update')
 check(not api.status().overlay,'dispose removes private cycling source')
 check(#registered>=1,'asset lifecycle owns disposal')
 check(gains>0 and bgmFilters>0 and restores>0,'native runtime profiles were actively managed')
-print('PASS independent FireRed M4A/Gen1-2 cycling audio routing, fanfare safety, resume/restart and SFX filter ownership')
+print('PASS independent FireRed M4A/Gen1-2/local-file cycling audio routing, fanfare safety, resume/restart and SFX filter ownership')
