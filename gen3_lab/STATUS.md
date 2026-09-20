@@ -14,7 +14,8 @@ Gen1ReComp++ v0.2.66, d70ef7c40e4166b82ed8da692423f010f4406e1b. The game registr
 - shading.lua: shade-preserving paint transform with non-collapsing black/white endpoints and exact Original bypass. RGB is a reference paint colour, not the value of every shaded output pixel.
 - native_menu.lua: 240x160 menu scaffold using native font/windows/frame preference, tap-only navigation and clipped text.
 - settings.lua: separate FireRed-beta options namespace, first-run Auto Bike ON, one-time native Music-volume copy (including zero), inherited cycling profiles, restart/resume and validated RGB hex storage. It never migrates from or writes the stable bicycle_plus bucket.
-- integration.lua + beta_main.lua: FireRed generation gate and lifecycle wiring now attach native auto-mount, add an AUTOBIKE+ row to the native Gen 3 OPTION screen, expose Gen 3-styled top/audio/appearance pages and restore direct engine wrappers on disposal. beta_manifest.json uses the distinct autobike_plus_firered_beta id and has no GitHub updater field.
+- integration.lua + beta_main.lua: FireRed generation gate and lifecycle wiring attach native auto-mount, add an AUTOBIKE+ row to the native Gen 3 OPTION screen, expose Gen 3-styled top/audio/appearance pages and restore direct engine wrappers on disposal. beta_manifest.json uses the distinct autobike_plus_firered_beta id and has no GitHub updater field.
+- player_paint.lua: wraps the native FireRed overworld draw only for a call matching the live player's bike graphics, position and facing. It verifies the canonical extracted source, builds a private shade-preserving image and draws that copy; shared OwSprites images are never mutated, non-player calls fall through, and all-Original uses the exact vanilla path.
 
 ## Tests and limits
 
@@ -22,10 +23,10 @@ The unchanged v1.9.3 import, options/reset, region, first-ride and six-edition r
 
 Private local art tests use both canonical rider sheets extracted from the supplied ROM: Original, single-part paint, black/white/saturated colours, alpha and unchanged non-target pixels across nine frames each. The repository includes no ROMs, ripped sprites, font data or user audio. Local comparison images are diagnostic outputs, not game screenshots.
 
-Repository tests cover model rules, the native Bag/ItemUse adapter, native UI Stack, isolated settings persistence and the FireRed lifecycle/menu integration with simulated device/field/window boundaries. Refer to Actions for actual pass/fail outcomes. Obeying a mask does not prove all ambiguous pixels were classified anatomically correctly; the animation still requires human review.
+Repository tests cover model rules, native Bag/ItemUse, native UI Stack, isolated settings, lifecycle/menu integration and player-only/private-texture paint interception using generated RGBA bytes. Refer to Actions for actual pass/fail outcomes. A synthetic renderer test proves selection and source isolation, not the anatomical correctness of every real-art mask; that still requires visual review in motion.
 
 ## Still required before a playable beta
 
-Player-only texture interception without NPC/shared-palette changes; complete native appearance/colour-picker and pointer/keyboard/controller editing; independent M4A sequencing and audio mixing; current/other-game/imported-file song selection and profiles; platform chooser/decoder integration; beta staging/ZIP validation; full-gameplay and physical-device tests. Reusing the singleton Gen3 audio worker would steal native music, so the Gen1/2 audio implementation cannot simply be enabled for FireRed.
+Complete native appearance/colour-picker and pointer/keyboard/controller editing; independent M4A sequencing and audio mixing; current/other-game/imported-file song selection and profiles; platform chooser/decoder integration; beta staging/ZIP validation; full-gameplay and physical-device tests. Reusing the singleton Gen3 audio worker would steal native music, so the Gen1/2 audio implementation cannot simply be enabled for FireRed.
 
 A temporary FireRed-only testing package with a separate ID remains the initial deliverable. A single public AUTOBIKE+ with isolated generation adapters remains the longer-term design. No new public tag or Update All release is created by this branch.

@@ -9,5 +9,8 @@ return function(mod)
  local integration=module('integration').attach(mod,{
   settings=settings,menu=menu,Machine=module('mount'),NativeMount=module('native_mount'),
  })
+ local paint=module('player_paint').attach(mod,module('parts'),module('shading'),settings)
+ integration.paint=paint
+ mod.exports.playerPaint=paint
  mod.exports.beta=integration
 end
