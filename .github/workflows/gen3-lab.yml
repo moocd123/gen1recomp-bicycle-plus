@@ -43,19 +43,36 @@ jobs:
           for edition in red blue yellow gold silver crystal; do
             lua5.3 verification/v1.9.1/check_mode_audio.lua ../engine "$edition"
           done
-      - name: Test FireRed development components without a game save
+      - name: FireRed mount model
+        working-directory: source
+        run: lua5.3 gen3_lab/check_mount.lua gen3_lab
+      - name: FireRed native mount adapter
+        working-directory: source
+        run: lua5.3 gen3_lab/check_native_mount.lua ../engine
+      - name: FireRed native menus
+        working-directory: source
+        run: lua5.3 gen3_lab/check_menu.lua ../engine
+      - name: FireRed shade transform
+        working-directory: source
+        run: lua5.3 gen3_lab/check_shading.lua gen3_lab
+      - name: FireRed isolated settings
+        working-directory: source
+        run: lua5.3 gen3_lab/check_settings.lua
+      - name: FireRed lifecycle integration
+        working-directory: source
+        run: lua5.3 gen3_lab/check_integration.lua
+      - name: FireRed player paint and appearance preview
+        working-directory: source
+        run: lua5.3 gen3_lab/check_player_paint.lua
+      - name: FireRed colour picker input
+        working-directory: source
+        run: lua5.3 gen3_lab/check_colour_picker.lua
+      - name: FireRed pointer bridge
+        working-directory: source
+        run: lua5.3 gen3_lab/check_pointer_bridge.lua
+      - name: FireRed beta manifest gate
         working-directory: source
         run: |
-          set -euo pipefail
-          lua5.3 gen3_lab/check_mount.lua gen3_lab
-          lua5.3 gen3_lab/check_native_mount.lua ../engine
-          lua5.3 gen3_lab/check_menu.lua ../engine
-          lua5.3 gen3_lab/check_shading.lua gen3_lab
-          lua5.3 gen3_lab/check_settings.lua
-          lua5.3 gen3_lab/check_integration.lua
-          lua5.3 gen3_lab/check_player_paint.lua
-          lua5.3 gen3_lab/check_colour_picker.lua
-          lua5.3 gen3_lab/check_pointer_bridge.lua
           python3 - <<'PY'
           import json
           m=json.load(open('gen3_lab/beta_manifest.json',encoding='utf-8'))
