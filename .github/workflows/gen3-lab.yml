@@ -100,3 +100,33 @@ jobs:
           assert m.get('experimental') is True
           print('PASS isolated FireRed beta manifest gate')
           PY
+      - name: Build and verify isolated FireRed beta ZIP
+        working-directory: source
+        run: |
+          set -euo pipefail
+          python3 gen3_lab/build_beta.py
+          unzip -t dist/autobike_plus_firered_beta-0.1.0-beta.1.zip
+          rm -rf staged && mkdir staged
+          unzip -q dist/autobike_plus_firered_beta-0.1.0-beta.1.zip -d staged
+          test "$(find staged -type f -name '*.lua' | wc -l)" -eq 17
+          for file in staged/*.lua; do luac5.3 -p "$file"; done
+          lua5.3 - ../engine staged <<'LUA'
+          package.path=assert(arg[1])..'/?.lua;'..package.path
+          local Json=require('src.link.Json')
+          local Manifest=require('src.mods.Manifest')
+          local f=assert(io.open(assert(arg[2])..'/manifest.json'));local raw=Json.decode(f:read('*a'));f:close()
+          local m=Manifest.validate(raw,'autobike_plus_firered_beta')
+          assert(m.id=='autobike_plus_firered_beta' and m.name=='AUTOBIKE+ FireRed Test')
+          assert(raw.games[1]=='firered' and raw.game_version=='>=0.2.66')
+          assert(raw.experimental==true and raw.github==nil)
+          print('PASS staged beta manifest through pinned engine validator.')
+          LUA
+      - name: Upload installable FireRed test artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: autobike-plus-firered-beta-${{ github.sha }}
+          path: |
+            source/dist/autobike_plus_firered_beta-0.1.0-beta.1.zip
+            source/dist/AUTOBIKE_FIRERED_BETA_SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 7
