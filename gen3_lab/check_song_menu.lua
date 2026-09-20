@@ -1,24 +1,29 @@
 local Catalog=dofile('gen3_lab/song_catalog.lua')
 local SongMenu=dofile('gen3_lab/song_menu.lua')
-local opened={};local menu={open=function(game,title,rows,opts)local page={game=game,title=title,rows=rows,opts=opts};opened[#opened+1]=page;return page end}
+local opened={};local menu={open=function(game,title,rows,opts)local page={game=game,title=title,rows=rows,opts=opts,close=function()end};opened[#opened+1]=page;return page end}
 local value='original';local settings={get=function()return value end,set=function(_,key,v)assert(key=='bike_song');value=v;return true end}
 local Audio={songInfo=function(id)if id==282 or id==300 or id==340 then return{kind='bgm'}end end}
 local Legacy={}
 function Legacy.editions()return{{id='red',label='RED',available=true},{id='blue',label='BLUE',available=false}}end
-function Legacy.gameSongs(edition)
- assert(edition=='red');return{{id='game:red:Music_Bicycle',name='BICYCLE'},{id='game:red:Music_Route1',name='ROUTE1'}}
-end
-function Legacy.describe(key)
- if key=='game:red:Music_Route1'then return'RED: ROUTE1'end
-end
-local fileKey='file:'..string.rep('a',64)
-local Local={}
+function Legacy.gameSongs(edition)assert(edition=='red');return{{id='game:red:Music_Bicycle',name='BICYCLE'},{id='game:red:Music_Route1',name='ROUTE1'}}end
+function Legacy.describe(key)if key=='game:red:Music_Route1'then return'RED: ROUTE1'end end
+local fileKey='file:'..string.rep('a',64);local importedKey='file:'..string.rep('c',64)
+local Local={removed=nil}
 function Local.files()return{{id=fileKey,name='MY ROAD SONG',missing=false},{id='file:'..string.rep('b',64),name='MISSING SONG',missing=true}}end
-function Local.describe(key)if key==fileKey then return'MY ROAD SONG'end end
+function Local.describe(key)if key==fileKey then return'MY ROAD SONG'elseif key==importedKey then return'NEW IMPORT'end end
+function Local.remove(id)Local.removed=id;return true end
+local pending=false;local mode='direct'
+local Importer={}
+function Importer.choose()
+ if mode=='pending'then pending=true;return'pending'end
+ return{id=importedKey,name='NEW IMPORT'},'IMPORTED'
+end
+function Importer.hasWork()return pending end
+function Importer.poll()if pending then pending=false;return{id=fileKey,name='MY ROAD SONG'},'IMPORTED'end end
 local mod={exports={}}
-local api=SongMenu.new(mod,settings,menu,Catalog,{Audio=Audio,Legacy=Legacy,Local=Local})
+local api=SongMenu.new(mod,settings,menu,Catalog,{Audio=Audio,Legacy=Legacy,Local=Local,Importer=Importer})
 local n=0;local function ck(v,m)assert(v,m);n=n+1 end
-api.open({});ck(opened[#opened].title=='BIKE SONG'and#opened[#opened].rows==4,'song root missing expected routes')
+api.open({});ck(opened[#opened].title=='BIKE SONG'and#opened[#opened].rows==5,'song root missing expected routes')
 local root=opened[#opened].rows;ck(root[1].value()=='ON','Original selection marker missing')
 root[2].activate();local current=opened[#opened];ck(current.title=='FIRERED SOUNDTRACK'and#current.rows==3,'current soundtrack page incorrect')
 ck(current.rows[1].label=='Bicycle'and current.rows[2].label=='Pallet Town'and current.rows[3].label=='Mewtwo Battle','current song labels incorrect')
@@ -34,8 +39,13 @@ ck(api.describe({})=='RED: ROUTE1','legacy song description incorrect')
 api.open({});root=opened[#opened].rows;root[4].activate();local localPage=opened[#opened]
 ck(localPage.title=='IMPORTED SONGS'and#localPage.rows==2,'local imported-song page incorrect')
 ck(localPage.rows[2].activate==nil and localPage.rows[2].label:find('MISSING:',1,true),'missing local song should be disabled')
-localPage.rows[1].activate();ck(value==fileKey and localPage.rows[1].value()=='ON','local song selection did not persist')
+localPage.rows[1].activate();local detail=opened[#opened];ck(detail.title=='SONG OPTIONS','local song detail missing')
+detail.rows[1].activate();ck(value==fileKey and detail.rows[1].value()=='ON','local song selection did not persist')
 ck(api.describe({})=='MY ROAD SONG','local song description incorrect')
+detail.rows[2].activate();ck(Local.removed==fileKey and value=='original','local song removal did not restore Original')
+api.open({});root=opened[#opened].rows;root[5].activate();ck(value==importedKey and api.importStatus()=='SELECTED: NEW IMPORT','desktop/direct import did not select song')
+mode='pending';root[5].activate();ck(api.importStatus()=='CHOOSING AUDIO FILE','pending import status missing')
+api.poll({},0.1);ck(value==fileKey and api.importStatus()=='SELECTED: MY ROAD SONG','pending import completion did not select song')
 api.open({});opened[#opened].rows[1].activate();ck(value=='original'and api.describe({})=='ORIGINAL BICYCLE','Original restore failed')
 ck(mod.exports.gen3SongMenu==api,'song menu diagnostic export missing')
-print('PASS '..n..' FireRed current/imported-game/local-song menu assertions.')
+print('PASS '..n..' FireRed current/imported-game/local-song/import-control menu assertions.')

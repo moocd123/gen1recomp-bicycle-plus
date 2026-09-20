@@ -6,9 +6,20 @@ function SongMenu.new(mod,settings,menu,Catalog,services)
  local Audio=S.Audio or require('src.core.game3.audio')
  local Legacy=S.Legacy
  local Local=S.Local
+ local Importer=S.Importer
  local api={}
+ local status=nil
  local function selected(game)return settings.get('bike_song',game)or'original'end
  local function choose(game,key)return settings.set(game,'bike_song',key)end
+ local function setStatus(v)status=v and tostring(v):upper()or nil;return status end
+ local function handleImported(game,row,err)
+  if type(row)=='table'and row.id then
+   if choose(game,row.id)then setStatus('SELECTED: '..tostring(row.name or'IMPORTED SONG'));return row end
+   return nil,setStatus('COULD NOT SAVE SONG')
+  end
+  if err then return nil,setStatus(err)end
+  return nil
+ end
  function api.describe(game)
   local key=selected(game)
   if key=='original'or key:match('^firered:%d+$')or key:match('^fr:%d+$')then
@@ -17,6 +28,12 @@ function SongMenu.new(mod,settings,menu,Catalog,services)
   if Legacy and Legacy.describe then local v=Legacy.describe(key);if v then return v end end
   if Local and Local.describe then local v=Local.describe(key);if v then return v end end
   return'MISSING SONG'
+ end
+ function api.importStatus()return status end
+ function api.poll(game,dt)
+  if not(Importer and Importer.hasWork and Importer.hasWork())then return end
+  local row,err=Importer.poll(dt)
+  if row or err then return handleImported(game,row,err)end
  end
  function api.openCurrent(game)
   local rows={}
@@ -59,6 +76,20 @@ function SongMenu.new(mod,settings,menu,Catalog,services)
   if #rows==0 then rows[1]={label='NO GEN 1 OR 2 IMPORTS FOUND'}end
   return menu.open(game,'OTHER GAME SONGS',rows)
  end
+ function api.openLocalDetail(game,row)
+  local rows={
+   {label='USE FOR CYCLING',value=function()return selected(game)==row.id and'ON'or nil end,
+    activate=function()return choose(game,row.id)end},
+  }
+  if Local and Local.remove then
+   rows[#rows+1]={label='REMOVE LOCAL COPY',activate=function()
+    if selected(game)==row.id then choose(game,'original')end
+    local ok,err=Local.remove(row.id)
+    if ok then setStatus('REMOVED: '..row.name)else setStatus(err or'REMOVE FAILED')end
+   end}
+  end
+  return menu.open(game,'SONG OPTIONS',rows)
+ end
  function api.openLocal(game)
   local rows={}
   if Local and Local.files then
@@ -66,11 +97,54 @@ function SongMenu.new(mod,settings,menu,Catalog,services)
     local row=entry
     rows[#rows+1]={label=(row.missing and'MISSING: 'or'')..row.name,
      value=function()return selected(game)==row.id and'ON'or nil end,
-     activate=not row.missing and function()return choose(game,row.id)end or nil}
+     activate=not row.missing and function()return api.openLocalDetail(game,row)end or nil}
    end
   end
   if #rows==0 then rows[1]={label='NO IMPORTED AUDIO'}end
   return menu.open(game,'IMPORTED SONGS',rows)
+ end
+ function api.openBrowser(game,path)
+  if not(Importer and Importer.browser)then return nil,setStatus('FILE BROWSER UNAVAILABLE')end
+  local browser=Importer.browser()
+  local ok,why=browser.open({title='Select audio',mode='all',initialPath=path or'.'})
+  if not ok then return nil,setStatus(why or'FILE BROWSER FAILED')end
+  local page
+  local rows={}
+  rows[#rows+1]={label='.. PARENT FOLDER',activate=function()
+   local parent=browser.currentDir:gsub('/$',''):match('^(.*)/[^/]+$')
+   local target=parent and parent~=''and parent or'/'
+   if page and page.close then page.close()else browser.close()end
+   return api.openBrowser(game,target)
+  end}
+  for _,entry in ipairs(browser.entries or{})do
+   local item=entry
+   local ext=tostring(item.name or''):lower():match('%.([^%.]+)$')
+   if item.isDir or({mp3=true,ogg=true,wav=true,flac=true})[ext]then
+    rows[#rows+1]={label=(item.isDir and'FOLDER: 'or'')..tostring(item.name or item.path),activate=function()
+     if item.isDir then
+      if page and page.close then page.close()else browser.close()end
+      return api.openBrowser(game,item.path)
+     end
+     local row,err=Importer.readSelected(item.path)
+     if row then
+      if page and page.close then page.close()else browser.close()end
+      return handleImported(game,row,err)
+     end
+     return setStatus(err or'IMPORT FAILED')
+    end}
+   end
+  end
+  page=menu.open(game,'SELECT AUDIO FILE',rows,{exit=function()browser.close()end})
+  return page
+ end
+ function api.chooseImport(game)
+  if not Importer then return nil,setStatus('IMPORT UNAVAILABLE')end
+  local row,err=Importer.choose()
+  if row=='pending'then setStatus('CHOOSING AUDIO FILE');return row
+  elseif row=='browser'then setStatus(nil);return api.openBrowser(game,'.')
+  elseif type(row)=='table'then return handleImported(game,row,err)
+  end
+  return handleImported(game,nil,err or'IMPORT FAILED')
  end
  function api.open(game)
   local rows={
@@ -79,12 +153,10 @@ function SongMenu.new(mod,settings,menu,Catalog,services)
     activate=function()return choose(game,'original')end},
    {label='CURRENT GAME SONGS',activate=function()return api.openCurrent(game)end},
   }
-  if Legacy then
-   rows[#rows+1]={label='OTHER IMPORTED GAMES',activate=function()return api.openLegacy(game)end}
-  end
-  if Local then
-   rows[#rows+1]={label='IMPORTED SONGS',activate=function()return api.openLocal(game)end}
-  end
+  if Legacy then rows[#rows+1]={label='OTHER IMPORTED GAMES',activate=function()return api.openLegacy(game)end}end
+  if Local then rows[#rows+1]={label='IMPORTED SONGS',activate=function()return api.openLocal(game)end}end
+  if Importer then rows[#rows+1]={label='IMPORT SONG',value=function()return status end,
+    activate=function()return api.chooseImport(game)end}end
   return menu.open(game,'BIKE SONG',rows)
  end
  mod.exports.gen3SongMenu=api

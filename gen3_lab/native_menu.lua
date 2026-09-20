@@ -16,13 +16,21 @@ function Menu.new(services)
   api.serial=api.serial+1
   local id='autobike-gen3-lab-'..api.serial
   local m={index=1,scroll=0,timer=0,rows=rows,previewError=nil}
-  local function close()Stack.pop(id)end
+  local closed=false
+  local function close()
+   if closed then return end;closed=true
+   if opts.exit then pcall(opts.exit,m)end
+   Stack.pop(id)
+  end
   local function visible()
    m.index=math.max(1,math.min(m.index,#rows+1))
    if m.index<=m.scroll then m.scroll=m.index-1 end
    if m.index>m.scroll+7 then m.scroll=m.index-7 end
   end
-  function m.update(dt)m.timer=m.timer+math.min(0.2,math.max(0,dt or 0));visible()end
+  function m.update(dt)
+   m.timer=m.timer+math.min(0.2,math.max(0,dt or 0));visible()
+   if opts.update then opts.update(m,dt or 0)end
+  end
   function m.handleInput(input)
    if input:wasPressed('b')or input:wasPressed('start')then close();return end
    local before=m.index
