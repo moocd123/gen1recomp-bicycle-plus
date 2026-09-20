@@ -31,11 +31,11 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends lua5.3
-      - name: Existing source checks on the new engine (no releases or save imports)
+      - name: Existing source checks on new engine (no releases or save imports)
         working-directory: source
         run: |
           set -euo pipefail
-          for file in *.lua; do luac5.3 -p "$file"; done
+          for file in *.lua gen3_lab/*.lua; do luac5.3 -p "$file"; done
           lua5.3 verification/v1.9.3/check_release.lua ../engine
           lua5.3 verification/v1.9.3/check_options.lua ../engine
           lua5.3 verification/v1.9.3/check_regions.lua ../engine
@@ -43,3 +43,11 @@ jobs:
           for edition in red blue yellow gold silver crystal; do
             lua5.3 verification/v1.9.1/check_mode_audio.lua ../engine "$edition"
           done
+      - name: Test new FireRed development components without a game save
+        working-directory: source
+        run: |
+          set -euo pipefail
+          lua5.3 gen3_lab/check_mount.lua gen3_lab
+          lua5.3 gen3_lab/check_native_mount.lua ../engine
+          lua5.3 gen3_lab/check_menu.lua ../engine
+          lua5.3 gen3_lab/check_shading.lua gen3_lab
