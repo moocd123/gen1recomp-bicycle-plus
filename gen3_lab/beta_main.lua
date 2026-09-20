@@ -6,11 +6,16 @@ return function(mod)
  end
  local settings=module('settings').init(mod)
  local menu=module('native_menu').new()
+ local picker=module('colour_picker').new(mod,settings)
+ local paint
  local integration=module('integration').attach(mod,{
   settings=settings,menu=menu,Machine=module('mount'),NativeMount=module('native_mount'),
+  openColourPart=function(game,key,label)return picker.open(game,key,label)end,
+  invalidatePaint=function()if paint and paint.invalidate then paint.invalidate()end end,
  })
- local paint=module('player_paint').attach(mod,module('parts'),module('shading'),settings)
- integration.paint=paint
+ paint=module('player_paint').attach(mod,module('parts'),module('shading'),settings)
+ integration.paint=paint;integration.colourPicker=picker
  mod.exports.playerPaint=paint
+ mod.exports.colourPicker=picker
  mod.exports.beta=integration
 end

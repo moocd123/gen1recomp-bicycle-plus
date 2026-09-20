@@ -8,6 +8,8 @@ local DEFAULTS={
  bike_frame_colour='original',bike_tyres_colour='original',bike_rims_colour='original',
  bike_spokes_colour='original',bike_handlebars_colour='original',
 }
+local CUSTOM_DEFAULTS={bike_frame_colour='#c53a3a',bike_tyres_colour='#3a3a7b',
+ bike_rims_colour='#b5b5d6',bike_spokes_colour='#efefff',bike_handlebars_colour='#b5b5d6'}
 local COLOURS={bike_frame_colour=true,bike_tyres_colour=true,bike_rims_colour=true,
  bike_spokes_colour=true,bike_handlebars_colour=true}
 local MODES={area=true,bicycle=true,both=true}
@@ -94,6 +96,20 @@ function Settings.init(mod,services)
   local s=saved(game,true);if not s then return false end
   s[key]=n;local l=live(game,true);if l then l[key]=n end
   persist(game,key,n);return true
+ end
+ function api.getRememberedColour(key,game)
+  if not COLOURS[key]then return nil end
+  local c=colour(raw(game,key..'_custom'))
+  if c and c~='original'then return c end
+  c=colour(raw(game,key));if c and c~='original'then return c end
+  return CUSTOM_DEFAULTS[key]
+ end
+ function api.rememberColour(game,key,value)
+  if Runtime.safeMode or not COLOURS[key]then return false end
+  local c=colour(value);if not c or c=='original'then return false end
+  local s=saved(game,true);if not s then return false end
+  s[key..'_custom']=c;local l=live(game,true);if l then l[key..'_custom']=c end
+  persist(game,key..'_custom',c);return true
  end
  function api.ensure(game)
   if Runtime.safeMode then return false end

@@ -55,6 +55,11 @@ function Integration.attach(mod,S)
    rows[#rows+1]={label=label,value=function()return colourLabel(settings.get(key,game))end,
     activate=S.openColourPart and function()return S.openColourPart(game,key,label,settings)end or nil}
   end
+  rows[#rows+1]={label='RESET PAINT',activate=function()
+   local ok=true;for _,p in ipairs(PARTS)do ok=settings.set(game,p[2],'original')and ok end
+   if S.invalidatePaint then S.invalidatePaint()end
+   return ok
+  end}
   return menu.open(game,'BIKE APPEARANCE',rows)
  end
  function api.openAudio(game)

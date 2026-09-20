@@ -54,6 +54,7 @@ jobs:
           lua5.3 gen3_lab/check_settings.lua
           lua5.3 gen3_lab/check_integration.lua
           lua5.3 gen3_lab/check_player_paint.lua
+          lua5.3 gen3_lab/check_colour_picker.lua
           python3 - <<'PY'
           import json
           m=json.load(open('gen3_lab/beta_manifest.json',encoding='utf-8'))
