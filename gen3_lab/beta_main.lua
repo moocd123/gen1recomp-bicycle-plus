@@ -7,6 +7,7 @@ return function(mod)
  local settings=module('settings').init(mod)
  local menu=module('native_menu').new()
  local picker=module('colour_picker').new(mod,settings)
+ local pointer=module('pointer_bridge').attach(mod,picker)
  local paint
  local integration=module('integration').attach(mod,{
   settings=settings,menu=menu,Machine=module('mount'),NativeMount=module('native_mount'),
@@ -14,8 +15,9 @@ return function(mod)
   invalidatePaint=function()if paint and paint.invalidate then paint.invalidate()end end,
  })
  paint=module('player_paint').attach(mod,module('parts'),module('shading'),settings)
- integration.paint=paint;integration.colourPicker=picker
+ integration.paint=paint;integration.colourPicker=picker;integration.pointerBridge=pointer
  mod.exports.playerPaint=paint
  mod.exports.colourPicker=picker
+ mod.exports.pointerBridge=pointer
  mod.exports.beta=integration
 end
