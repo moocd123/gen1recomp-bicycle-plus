@@ -54,25 +54,41 @@ end
 function Player.renderBuffered(slot,n,opts)
  renders=renders+1;return{slot=slot,n=n,rate=opts.sampleRate}
 end
-local made={}
-local function newQueueableSource()
- local s=soundSource();made[#made+1]=s;return s
+local chipStarts,chipRenders=0,0
+local ChipSynth={SAMPLE_RATE=32768}
+function ChipSynth.newEngine(data,def,opts)
+ chipStarts=chipStarts+1
+ check(data.tag=='red'and def.label=='Music_Route1'and opts.allowLoops==true,'legacy ChipSynth inputs incorrect')
+ return{finished=function()return false end}
+end
+function ChipSynth.soundData(_,n,channels)
+ chipRenders=chipRenders+1;check(n==64 and channels==2,'legacy buffer settings incorrect')
+ return{released=false,release=function(self)self.released=true end}
+end
+local Legacy={resolve=function(key)
+ if key=='game:red:Music_Route1'then return{kind='chip',label='Music_Route1',data={tag='red'},def={label='Music_Route1'}}end
+ return nil,'missing legacy song'
+end}
+local made={};local madeRates={}
+local function newQueueableSource(rate)
+ local s=soundSource();made[#made+1]=s;madeRates[#madeRates+1]=rate;return s
 end
 local game={phase='field',options={musicVol=5,sfxVol=4,musicFilter=1}}
 local mod={id='autobike_plus_firered_beta',game=game,exports={},events={on=function()end},hooks={wrap=function()end}}
-local api=Layer.attach(mod,settings,{Version=Version,Audio=Audio,Player=Player,PlayerState=PlayerState,
- Runtime=Runtime,Assets=Assets,newQueueableSource=newQueueableSource,bufferSamples=128,maxFill=1})
+local api=Layer.attach(mod,settings,{Version=Version,Audio=Audio,Player=Player,ChipSynth=ChipSynth,Legacy=Legacy,PlayerState=PlayerState,
+ Runtime=Runtime,Assets=Assets,newQueueableSource=newQueueableSource,bufferSamples=128,chipBufferSamples=64,maxFill=1})
 check(Audio.update~=originalUpdate,'layer wraps native Audio.update')
 
 -- BICYCLE: independent song starts while native area bus is suppressed.
 Audio.update(1/60)
 check(nativeUpdates==1,'native Audio.update still runs')
 check(starts==1 and renders==1,'independent M4A slot starts and renders')
-check(api.status().songId==282 and api.status().ready,'original resolves to FireRed cycling role')
+check(api.status().songId==282 and api.status().songKind=='m4a'and api.status().ready,'original resolves to FireRed cycling role')
 near(Audio._bgmVolume,0,'bicycle-only suppresses area only after overlay is ready')
 near(Audio._sfxVolume,4/7,'inherited riding SFX volume uses native option')
 near(made[1].volume,1,'bike volume 7 is full overlay gain')
 check(made[1].playing,'overlay source plays')
+check(madeRates[1]==44100,'FireRed overlay uses M4A sample rate')
 
 -- BOTH keeps the independent overlay while applying the riding-area profile.
 values.riding_music='both';values.riding_area_volume=3;values.bike_volume=2;values.bike_filter=2
@@ -111,6 +127,17 @@ near(Audio._bgmVolume,5/7,'fanfare restores native music gain')
 Audio._fanfareActive=false;local beforeFanfareResume=starts;Audio.update(1/60)
 check(starts==beforeFanfareResume and fanfareSource.playing,'overlay resumes after fanfare')
 
+-- Imported Gen1/2 song uses a separate ChipSynth engine on the same private bus.
+values.bike_song_resume=false;values.bike_song='game:red:Music_Route1';PlayerState.biking=true
+Audio.update(1/60)
+check(api.status().ready and api.status().songKind=='chip'and api.status().songId=='Music_Route1','legacy song did not select chip backend')
+check(chipStarts==1 and chipRenders==1,'legacy song did not start/render exactly once')
+check(madeRates[#madeRates]==32768,'legacy overlay does not use ChipSynth sample rate')
+near(Audio._bgmVolume,0,'legacy bicycle-only playback suppresses area after ready')
+local chipSource=made[#made]
+values.bike_song_resume=true;PlayerState.biking=false;Audio.update(1/60);check(chipSource.paused,'legacy overlay pauses for resume')
+PlayerState.biking=true;Audio.update(1/60);check(chipStarts==1 and chipSource.playing,'legacy sequencer resumes without restart')
+
 -- Global SFX filter works off-bike and does not overwrite a newer external filter.
 PlayerState.biking=false;values.sfx_filter=2;Audio.update(1/60)
 check(se.filter and se.filter.highgain==0.16,'off-bike SFX filter applies')
@@ -123,4 +150,4 @@ check(Audio.update==originalUpdate,'dispose restores native Audio.update')
 check(not api.status().overlay,'dispose removes private cycling source')
 check(#registered>=1,'asset lifecycle owns disposal')
 check(gains>0 and bgmFilters>0 and restores>0,'native runtime profiles were actively managed')
-print('PASS independent FireRed cycling audio routing, fanfare safety, resume/restart and SFX filter ownership')
+print('PASS independent FireRed M4A/Gen1-2 cycling audio routing, fanfare safety, resume/restart and SFX filter ownership')
