@@ -19,9 +19,11 @@ return function(mod)
   end,
  })
  paint=module('player_paint').attach(mod,module('parts'),module('shading'),settings)
- integration.paint=paint;integration.colourPicker=picker;integration.pointerBridge=pointer
+ local audio=module('audio_layer').attach(mod,settings)
+ integration.paint=paint;integration.colourPicker=picker;integration.pointerBridge=pointer;integration.audio=audio
  mod.exports.playerPaint=paint
  mod.exports.colourPicker=picker
  mod.exports.pointerBridge=pointer
+ mod.exports.gen3Audio=audio
  mod.exports.beta=integration
 end
