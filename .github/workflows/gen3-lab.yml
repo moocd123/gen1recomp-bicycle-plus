@@ -40,9 +40,7 @@ jobs:
           lua5.3 verification/v1.9.3/check_options.lua ../engine
           lua5.3 verification/v1.9.3/check_regions.lua ../engine
           lua5.3 verification/v1.9.2/check_first_ride.lua ../engine
-          for edition in red blue yellow gold silver crystal; do
-            lua5.3 verification/v1.9.1/check_mode_audio.lua ../engine "$edition"
-          done
+          for edition in red blue yellow gold silver crystal; do lua5.3 verification/v1.9.1/check_mode_audio.lua ../engine "$edition"; done
       - name: FireRed mount model
         working-directory: source
         run: lua5.3 gen3_lab/check_mount.lua gen3_lab
@@ -67,6 +65,9 @@ jobs:
       - name: FireRed current/imported-song menu
         working-directory: source
         run: lua5.3 gen3_lab/check_song_menu.lua
+      - name: FireRed native song-name editor
+        working-directory: source
+        run: lua5.3 gen3_lab/check_text_entry.lua
       - name: FireRed shade transform
         working-directory: source
         run: lua5.3 gen3_lab/check_shading.lua gen3_lab
@@ -94,10 +95,8 @@ jobs:
           python3 - <<'PY'
           import json
           m=json.load(open('gen3_lab/beta_manifest.json',encoding='utf-8'))
-          assert m['id']=='autobike_plus_firered_beta'
-          assert m['games']==['firered'] and m['entry']=='main.lua'
-          assert 'github' not in m, 'beta must not opt into stable auto-update'
-          assert m.get('experimental') is True
+          assert m['id']=='autobike_plus_firered_beta' and m['games']==['firered'] and m['entry']=='main.lua'
+          assert 'github' not in m and m.get('experimental') is True
           print('PASS isolated FireRed beta manifest gate')
           PY
       - name: Build and verify isolated FireRed beta ZIP
@@ -108,17 +107,15 @@ jobs:
           unzip -t dist/autobike_plus_firered_beta-0.1.0-beta.1.zip
           rm -rf staged && mkdir staged
           unzip -q dist/autobike_plus_firered_beta-0.1.0-beta.1.zip -d staged
-          test "$(find staged -type f -name '*.lua' | wc -l)" -eq 17
+          test "$(find staged -type f -name '*.lua' | wc -l)" -eq 18
           for file in staged/*.lua; do luac5.3 -p "$file"; done
           lua5.3 - ../engine staged <<'LUA'
           package.path=assert(arg[1])..'/?.lua;'..package.path
-          local Json=require('src.link.Json')
-          local Manifest=require('src.mods.Manifest')
+          local Json=require('src.link.Json');local Manifest=require('src.mods.Manifest')
           local f=assert(io.open(assert(arg[2])..'/manifest.json'));local raw=Json.decode(f:read('*a'));f:close()
           local m=Manifest.validate(raw,'autobike_plus_firered_beta')
           assert(m.id=='autobike_plus_firered_beta' and m.name=='AUTOBIKE+ FireRed Test')
-          assert(raw.games[1]=='firered' and raw.game_version=='>=0.2.66')
-          assert(raw.experimental==true and raw.github==nil)
+          assert(raw.games[1]=='firered' and raw.game_version=='>=0.2.66' and raw.experimental==true and raw.github==nil)
           print('PASS staged beta manifest through pinned engine validator.')
           LUA
       - name: Upload installable FireRed test artifact

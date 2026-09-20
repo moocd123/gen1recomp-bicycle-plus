@@ -37,8 +37,9 @@ function Layer.attach(mod,settings,S)
  local currentGame=mod.game
  local disposed=false
  local source,slot,chipEngine,sourceId,sourceKey,sourceKind,paused
+ local previewSource,previewSlot,previewChip,previewId,previewKey,previewKind,previewPaused
  local profileApplied=false
- local lastError
+ local lastError,previewError
  local BUFFER_SAMPLES=S.bufferSamples or math.min(4096,Player.BUFFER_SAMPLES or 4096)
  local CHIP_BUFFER_SAMPLES=S.chipBufferSamples or 2048
  local BUFFER_COUNT=S.bufferCount or 12
@@ -122,17 +123,26 @@ function Layer.attach(mod,settings,S)
   releaseSource(source)
   source,slot,chipEngine,sourceId,sourceKey,sourceKind,paused=nil,nil,nil,nil,nil,nil,nil
  end
+ local function destroyPreview()
+  releaseSource(previewSource)
+  previewSource,previewSlot,previewChip,previewId,previewKey,previewKind,previewPaused=nil,nil,nil,nil,nil,nil,nil
+ end
  local function pauseOverlay()
   if not source then return end
   if source.pause then pcall(source.pause,source)end
   paused=true
  end
+ local function pausePreview()
+  if not previewSource then return end
+  if previewSource.pause then pcall(previewSource.pause,previewSource)end
+  previewPaused=true
+ end
  local function suspendOverlay(game)
   if not source then return end
   if get('bike_song_resume',game)==true then pauseOverlay()else destroyOverlay()end
  end
- local function resolveSong(game)
-  local key=tostring(get('bike_song',game)or'original')
+ local function resolveSong(game,keyOverride)
+  local key=tostring(keyOverride or get('bike_song',game)or'original')
   if key=='original'or key:match('^firered:%d+$')or key:match('^fr:%d+$')then
    local id
    if key=='original'then id=(Audio.role and Audio.role('cycling'))or 282
@@ -199,12 +209,45 @@ function Layer.attach(mod,settings,S)
   source,sourceId,sourceKey,sourceKind,paused=made,desc.id,desc.key,desc.kind,false
   return true
  end
+ local function makePreview(desc)
+  destroyPreview();previewError=nil
+  if desc.kind=='file'then
+   local opened,made,err=pcall(desc.selected.openSource)
+   if not opened or not made then previewError=tostring(opened and(err or'could not open imported audio')or made);return false end
+   if made.setLooping then pcall(made.setLooping,made,true)end
+   previewSource,previewId,previewKey,previewKind,previewPaused=made,desc.id,desc.key,'file',false
+   return true
+  end
+  local rate=desc.kind=='chip'and ChipSynth.SAMPLE_RATE or Player.SAMPLE_RATE
+  if desc.kind=='m4a'and not(Audio._pack and Audio._cache)then previewError='FireRed audio pack unavailable';return false end
+  local ok,made,err=pcall(newQueueableSource,rate)
+  if not ok then err=made;made=nil end
+  if not made then previewError=tostring(err or'queueable audio unavailable');return false end
+  if desc.kind=='m4a'then
+   local nextSlot={voices={}}
+   local started,value=pcall(Player.start,Audio._pack,Audio._cache,nextSlot,desc.id,{forceSeq=true})
+   if not started or value~=true then releaseSource(made);previewError=tostring(started and'could not start FireRed song'or value);return false end
+   previewSlot=nextSlot
+  elseif desc.kind=='chip'then
+   local selected=desc.selected
+   local started,value=pcall(ChipSynth.newEngine,selected.data,selected.def,{allowLoops=true})
+   if not started or not value then releaseSource(made);previewError=tostring(started and'could not start imported-game song'or value);return false end
+   previewChip=value
+  else releaseSource(made);previewError='unsupported preview backend';return false end
+  previewSource,previewId,previewKey,previewKind,previewPaused=made,desc.id,desc.key,desc.kind,false
+  return true
+ end
  local function overlayVolume(game)return clamp(get('bike_volume',game),0,7,7)/7 end
  local function overlayFilter(game)return clamp(get('bike_filter',game),0,3,0)end
  local function configureOverlay(game)
   if not source then return end
   if source.setVolume then pcall(source.setVolume,source,overlayVolume(game))end
   setFilter(source,overlayFilter(game))
+ end
+ local function configurePreview(game)
+  if not previewSource then return end
+  if previewSource.setVolume then pcall(previewSource.setVolume,previewSource,overlayVolume(game))end
+  setFilter(previewSource,overlayFilter(game))
  end
  local function ensurePlaying()
   if not source then return false end
@@ -213,6 +256,16 @@ function Layer.attach(mod,settings,S)
   if source.isPlaying then local p,v=pcall(source.isPlaying,source);playing=p and v==true end
   if not playing and source.play then
    local p=pcall(source.play,source);if not p then lastError='cycling source could not play';destroyOverlay();return false end
+  end
+  return true
+ end
+ local function ensurePreviewPlaying()
+  if not previewSource then return false end
+  if previewPaused then previewPaused=false end
+  local playing=false
+  if previewSource.isPlaying then local p,v=pcall(previewSource.isPlaying,previewSource);playing=p and v==true end
+  if not playing and previewSource.play then
+   local p=pcall(previewSource.play,previewSource);if not p then previewError='preview source could not play';destroyPreview();return false end
   end
   return true
  end
@@ -225,6 +278,17 @@ function Layer.attach(mod,settings,S)
   end
   local rendered,data=pcall(Player.renderBuffered,slot,BUFFER_SAMPLES,{master=1,sampleRate=Player.SAMPLE_RATE})
   if not rendered or not data then return nil,tostring(data or'cycling render failed')end
+  return data
+ end
+ local function nextPreviewBuffer()
+  if previewKind=='chip'then
+   if previewChip.finished and previewChip:finished()then return nil,'finished'end
+   local rendered,data=pcall(ChipSynth.soundData,previewChip,CHIP_BUFFER_SAMPLES,2)
+   if not rendered or not data then return nil,tostring(data or'preview chip render failed')end
+   return data
+  end
+  local rendered,data=pcall(Player.renderBuffered,previewSlot,BUFFER_SAMPLES,{master=1,sampleRate=Player.SAMPLE_RATE})
+  if not rendered or not data then return nil,tostring(data or'preview render failed')end
   return data
  end
  local function fillOverlay(game)
@@ -247,6 +311,27 @@ function Layer.attach(mod,settings,S)
    free=free-1
   end
   return ensurePlaying()
+ end
+ local function fillPreview(game)
+  if not previewSource then return false end
+  configurePreview(game)
+  if previewKind=='file'then return ensurePreviewPlaying()end
+  if(previewKind=='m4a'and not previewSlot)or(previewKind=='chip'and not previewChip)then return false end
+  local ok,free=pcall(previewSource.getFreeBufferCount,previewSource)
+  if not ok or type(free)~='number'then previewError='preview audio queue unavailable';destroyPreview();return false end
+  free=math.min(math.max(0,free),MAX_FILL)
+  while free>0 do
+   local data,err=nextPreviewBuffer()
+   if not data then
+    if err=='finished'then break end
+    previewError=err;destroyPreview();return false
+   end
+   local queued,q=pcall(previewSource.queue,previewSource,data)
+   if data.release then pcall(data.release,data)end
+   if not queued or q==false then previewError=tostring(queued and'preview queue refused buffer'or q);destroyPreview();return false end
+   free=free-1
+  end
+  return ensurePreviewPlaying()
  end
  local function ensureOverlay(game)
   local desc,err=resolveSong(game)
@@ -281,28 +366,51 @@ function Layer.attach(mod,settings,S)
   profileApplied=true
  end
 
+ function api.previewSong(key,game)
+  currentGame=game or currentGame or mod.game;game=currentGame
+  if not active()then return nil,'Playback unavailable in safe mode'end
+  local desc,err=resolveSong(game,key)
+  if not desc then return nil,err end
+  destroyPreview();pauseOverlay();restoreNativeProfile(game)
+  if not makePreview(desc)then return nil,previewError end
+  if not fillPreview(game)then local e=previewError or'Preview could not start';destroyPreview();return nil,e end
+  api.previewReady=true;return true
+ end
+ function api.stopPreview()destroyPreview();api.previewReady=false;return true end
  function api.update(game,dt)
   currentGame=game or currentGame or mod.game;game=currentGame
-  if not active()then suspendOverlay(game);restoreNativeProfile(game);restoreOwnedFilters();return false end
+  if not active()then destroyPreview();suspendOverlay(game);restoreNativeProfile(game);restoreOwnedFilters();return false end
   local riding=game and game.phase=='field'and P.biking==true
   local fanfare=Audio._fanfareActive==true
   local mode=tostring(get('riding_music',game)or'bicycle')
   if mode~='area'and mode~='bicycle'and mode~='both'then mode='bicycle'end
+  if previewSource then
+   pauseOverlay();local ready=false
+   if fanfare then pausePreview()else ready=fillPreview(game)end
+   if previewSource then
+    restoreNativeProfile(game);applySfxFilters(game,false)
+    api.riding=riding;api.mode=mode;api.overlayReady=false;api.previewReady=ready and not fanfare
+    api.songId=sourceId;api.songKind=sourceKind;api.error=previewError
+    return true
+   end
+  end
   local overlayReady=false
   if riding and not fanfare and mode~='area'then overlayReady=ensureOverlay(game)else suspendOverlay(game)end
   if riding and not fanfare then applyRidingProfile(game,mode,overlayReady)else restoreNativeProfile(game)end
   applySfxFilters(game,riding and not fanfare)
-  api.riding=riding;api.mode=mode;api.overlayReady=overlayReady;api.songId=sourceId;api.songKind=sourceKind;api.error=lastError
+  api.riding=riding;api.mode=mode;api.overlayReady=overlayReady;api.previewReady=false
+  api.songId=sourceId;api.songKind=sourceKind;api.error=lastError
   return true
  end
  function api.status()
   return{riding=api.riding==true,mode=api.mode,overlay=source~=nil,ready=api.overlayReady==true,
-   paused=paused==true,songId=sourceId,songKey=sourceKey,songKind=sourceKind,error=lastError}
+   paused=paused==true,songId=sourceId,songKey=sourceKey,songKind=sourceKind,error=api.error,
+   preview=previewSource~=nil,previewReady=api.previewReady==true,previewKey=previewKey,previewKind=previewKind}
  end
- function api.stop()destroyOverlay();restoreNativeProfile(currentGame);return true end
+ function api.stop()destroyPreview();destroyOverlay();restoreNativeProfile(currentGame);return true end
  function api.dispose()
   if disposed then return end;disposed=true
-  destroyOverlay();restoreNativeProfile(currentGame);restoreOwnedFilters()
+  destroyPreview();destroyOverlay();restoreNativeProfile(currentGame);restoreOwnedFilters()
   if Audio.update==api._wrapper then Audio.update=api._priorUpdate end
  end
  api._priorUpdate=Audio.update

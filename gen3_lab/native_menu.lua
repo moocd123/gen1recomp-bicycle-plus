@@ -15,7 +15,7 @@ function Menu.new(services)
   assert(game and type(rows)=='table','Menu context required');opts=opts or{}
   api.serial=api.serial+1
   local id='autobike-gen3-lab-'..api.serial
-  local m={index=1,scroll=0,timer=0,rows=rows,previewError=nil}
+  local m={game=game,index=1,scroll=0,timer=0,rows=rows,previewError=nil,_autobikeGen3Pointer=true}
   local closed=false
   local function close()
    if closed then return end;closed=true
@@ -26,6 +26,13 @@ function Menu.new(services)
    m.index=math.max(1,math.min(m.index,#rows+1))
    if m.index<=m.scroll then m.scroll=m.index-1 end
    if m.index>m.scroll+7 then m.scroll=m.index-7 end
+  end
+  local function activate(direction)
+   local row=rows[m.index]
+   if not row then close();return end
+   if direction and row.step then row.step(direction)
+   elseif row.activate then row.activate()
+   elseif row.step then row.step(1)end
   end
   function m.update(dt)
    m.timer=m.timer+math.min(0.2,math.max(0,dt or 0));visible()
@@ -38,13 +45,27 @@ function Menu.new(services)
    elseif input:wasPressed('down')then m.index=m.index%(#rows+1)+1
    else
     local row=rows[m.index]
-    if input:wasPressed('a')then
-     if not row then close()elseif row.activate then row.activate()elseif row.step then row.step(1)end
+    if input:wasPressed('a')then activate()
     elseif row and row.step then
-     if input:wasPressed('left')then row.step(-1)elseif input:wasPressed('right')then row.step(1)end
+     if input:wasPressed('left')then activate(-1)elseif input:wasPressed('right')then activate(1)end
     end
    end
    if before~=m.index then m.timer=0 end;visible()
+  end
+  function m.pointer(phase,x,y)
+   if phase~='pressed'and phase~='moved'then return true end
+   if x<16 or x>=224 or y<56 or y>=152 then return false end
+   local slot=math.floor((y-56)/13)+1
+   local index=m.scroll+slot
+   if index<1 or index>#rows+1 then return false end
+   if m.index~=index then m.index=index;m.timer=0 end;visible()
+   if phase=='pressed'then
+    local row=rows[index]
+    if not row then close()
+    elseif row.step then activate(x<120 and-1 or 1)
+    else activate()end
+   end
+   return true
   end
   local function clipText(text,x,y,width,selected)
    text=tostring(text or'')

@@ -7,14 +7,14 @@ return function(mod)
  local settings=module('settings').init(mod)
  local menu=module('native_menu').new()
  local picker=module('colour_picker').new(mod,settings)
- local pointer=module('pointer_bridge').attach(mod,picker)
  local legacy=module('legacy_songs').init(mod)
  local localSongs=module('local_songs').init(mod)
- -- import_picker.lua is staged from the already-proven stable adapter. It uses
- -- this beta's mod id/cache and therefore never writes bicycle_plus's library.
  local importer=module('import_picker').init(mod,localSongs)
+ local audio=module('audio_layer').attach(mod,settings,{Legacy=legacy,Local=localSongs})
+ local textEntry=module('text_entry').new(mod)
  local songMenu=module('song_menu').new(mod,settings,menu,module('song_catalog'),
-  {Legacy=legacy,Local=localSongs,Importer=importer})
+  {Legacy=legacy,Local=localSongs,Importer=importer,Preview=audio,TextEntry=textEntry})
+ local pointer=module('pointer_bridge').attach(mod,picker)
  local paint
  local integration=module('integration').attach(mod,{
   settings=settings,menu=menu,Machine=module('mount'),NativeMount=module('native_mount'),
@@ -28,7 +28,6 @@ return function(mod)
   end,
  })
  paint=module('player_paint').attach(mod,module('parts'),module('shading'),settings)
- local audio=module('audio_layer').attach(mod,settings,{Legacy=legacy,Local=localSongs})
  if mod.hooks and mod.hooks.wrap then
   mod.hooks:wrap('core.update',function(next,game,dt)
    local result=next(game,dt);songMenu.poll(game,dt);return result
@@ -40,14 +39,9 @@ return function(mod)
  end
  integration.paint=paint;integration.colourPicker=picker;integration.pointerBridge=pointer
  integration.audio=audio;integration.songMenu=songMenu;integration.importPicker=importer
- integration.legacySongs=legacy;integration.localSongs=localSongs
- mod.exports.playerPaint=paint
- mod.exports.colourPicker=picker
- mod.exports.pointerBridge=pointer
- mod.exports.gen3Audio=audio
- mod.exports.gen3SongMenu=songMenu
- mod.exports.gen3ImportPicker=importer
- mod.exports.gen3LegacySongs=legacy
- mod.exports.gen3LocalSongs=localSongs
+ integration.legacySongs=legacy;integration.localSongs=localSongs;integration.textEntry=textEntry
+ mod.exports.playerPaint=paint;mod.exports.colourPicker=picker;mod.exports.pointerBridge=pointer
+ mod.exports.gen3Audio=audio;mod.exports.gen3SongMenu=songMenu;mod.exports.gen3ImportPicker=importer
+ mod.exports.gen3LegacySongs=legacy;mod.exports.gen3LocalSongs=localSongs;mod.exports.gen3TextEntry=textEntry
  mod.exports.beta=integration
 end
