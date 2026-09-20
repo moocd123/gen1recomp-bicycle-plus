@@ -55,6 +55,9 @@ jobs:
       - name: FireRed current-song catalogue
         working-directory: source
         run: lua5.3 gen3_lab/check_song_catalog.lua
+      - name: FireRed isolated local-audio library
+        working-directory: source
+        run: lua5.3 gen3_lab/check_local_songs.lua
       - name: Imported Gen1/2 song source bridge
         working-directory: source
         run: lua5.3 gen3_lab/check_legacy_songs.lua
