@@ -58,6 +58,9 @@ jobs:
       - name: FireRed isolated settings
         working-directory: source
         run: lua5.3 gen3_lab/check_settings.lua
+      - name: FireRed independent cycling audio
+        working-directory: source
+        run: lua5.3 gen3_lab/check_audio_layer.lua gen3_lab
       - name: FireRed lifecycle integration
         working-directory: source
         run: lua5.3 gen3_lab/check_integration.lua
