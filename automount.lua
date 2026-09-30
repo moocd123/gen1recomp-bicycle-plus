@@ -1,4 +1,5 @@
--- Bicycle Plus: one automatic mount opportunity per map visit.
+-- AUTOBIKE+: one automatic mount opportunity per map visit, plus return
+-- from Surf when it interrupted an actual bicycle ride.
 -- Targets the Gen1ReComp++ 0.2.59 world implementations. This module registers
 -- events but never replaces a game method, input binding, item, or map rule.
 --
@@ -66,6 +67,7 @@ function M.init(mod, getSetting)
   local function reset()
     state = {
       pending = true, suppressed = false, lastRiding = nil,
+      wasSurfing = false, returnFromSurf = false, dismountCandidate = false,
       mapId = nil, game = nil, save = nil, enabled = nil,
       reason = "waiting_for_world",
     }
@@ -79,6 +81,7 @@ function M.init(mod, getSetting)
     -- A map load can legitimately dismount the rider. Do not mistake that
     -- engine transition for a manual dismount in the NEW map.
     state.lastRiding = nil
+    state.wasSurfing, state.returnFromSurf, state.dismountCandidate = false, false, false
     state.reason = "entered_area"
   end
 
@@ -122,22 +125,59 @@ function M.init(mod, getSetting)
     state.enabled = enabled
 
     local riding = isRiding(game, world, gen2)
-    if state.lastRiding == true and not riding then
-      -- Covers the bag, a registered item, field shortcuts, and other mods.
-      -- A scripted dismount also wins: we must never fight a cutscene.
-      state.suppressed, state.pending = true, false
-      state.reason = "dismounted_for_this_visit"
-    elseif riding then
-      state.suppressed, state.pending = false, false
-      state.reason = "already_riding"
-    end
-    state.lastRiding = riding
+    local surfing = gen2 and FieldMoves.isSurfing(world.playerState)
+      or not gen2 and world.player.surfing == true
+    local ready = gen2 and gen2Ready(game, world)
+      or not gen2 and gen1Ready(game, world)
+
     if not enabled then
-      state.pending = false
+      state.pending, state.returnFromSurf, state.dismountCandidate = false, false, false
+      state.lastRiding, state.wasSurfing = riding, surfing
       state.reason = "disabled"
       return
     end
-    if not state.pending or state.suppressed or riding then return end
+
+    if surfing then
+      -- Surf replaces the bike state; it is not a deliberate Bicycle dismount.
+      -- Gen 1 clears onBike BEFORE its got-on textbox finishes, so remember a
+      -- loss of the bike while control was busy until the actual Surf arrives.
+      if not state.wasSurfing and not state.suppressed
+          and (state.lastRiding or state.dismountCandidate) then
+        state.returnFromSurf = true
+      end
+      if state.returnFromSurf then state.pending, state.suppressed = true, false end
+      state.wasSurfing, state.lastRiding, state.dismountCandidate = true, false, false
+      state.reason = "surfing"
+      return
+    end
+    if state.wasSurfing then
+      state.wasSurfing = false
+      if state.returnFromSurf then
+        state.pending, state.suppressed = true, false
+        state.reason = "returning_from_surf"
+      end
+      state.returnFromSurf = false
+    end
+
+    if riding then
+      state.suppressed, state.pending = false, false
+      state.dismountCandidate, state.returnFromSurf = false, false
+      state.reason = "already_riding"
+    elseif state.lastRiding == true then
+      if ready then
+        state.suppressed, state.pending = true, false
+        state.reason = "dismounted_for_this_visit"
+      else
+        state.dismountCandidate = true
+        state.reason = "waiting_for_dismount_result"
+      end
+    elseif state.dismountCandidate and ready then
+      -- No Surf followed: keep the original manual/scripted-dismount rule.
+      state.suppressed, state.pending, state.dismountCandidate = true, false, false
+      state.reason = "dismounted_for_this_visit"
+    end
+    state.lastRiding = riding
+    if state.dismountCandidate or not state.pending or state.suppressed or riding then return end
 
     if pokemonControlled(game, world) then
       -- Keep this visit pending. Choosing trainer control later permits
@@ -147,8 +187,7 @@ function M.init(mod, getSetting)
       return
     end
 
-    if not (gen2 and gen2Ready(game, world)
-        or not gen2 and gen1Ready(game, world)) then
+    if not ready then
       state.reason = "waiting_for_control"
       return
     end
@@ -210,6 +249,7 @@ function M.init(mod, getSetting)
       mapId = state.mapId, pending = state.pending,
       suppressed = state.suppressed, riding = state.lastRiding,
       enabled = state.enabled, reason = state.reason,
+      returningFromSurf = state.returnFromSurf, surfing = state.wasSurfing,
     }
   end
 
@@ -218,6 +258,21 @@ function M.init(mod, getSetting)
     for _, unsubscribe in ipairs(subscriptions) do unsubscribe() end
     subscriptions = {}
     -- Disabling a mod should not knock the player off a bicycle.
+  end
+
+  if mod.hooks and mod.hooks.wrap then
+    subscriptions[#subscriptions + 1] = mod.hooks:wrap("item.use", function(nextFn, game, battle, id, ...)
+      local wasOnBike = active and GameVersion.generation() == 1 and id == "BICYCLE"
+        and not battle and game and game.save and game.save.onBike == true
+      local function packed(...) return {n=select("#", ...), ...} end
+      local results = packed(nextFn(game, battle, id, ...))
+      if wasOnBike and game.save.onBike ~= true and state.game == game then
+        state.suppressed, state.pending = true, false
+        state.returnFromSurf, state.dismountCandidate, state.lastRiding = false, false, false
+        state.reason = "manual_bicycle_dismount"
+      end
+      return (table.unpack or unpack)(results, 1, results.n)
+    end, -20)
   end
 
   subscriptions[#subscriptions + 1] = mod.events:on("map.entered", function(e)

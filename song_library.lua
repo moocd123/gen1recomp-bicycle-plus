@@ -1,14 +1,14 @@
 -- Local music catalogue. No network requests, ROM patching or game switching.
 -- The library lives outside the mod install directory so Update All cannot
 -- replace imported tracks. Only explicitly selected files / the dedicated
--- inbox and the six already-imported audio caches are read.
+-- inbox and the supported already-imported audio caches are read.
 local Library = {}
 Library.ROOT = 'mod_cache/bicycle_plus/music'
 Library.LEGACY_ROOT = 'mod_data/bicycle_plus/music'
 Library.PENDING = 'mods/bicycle_plus/baseroms/bicycle_plus_audio_pick.bin'
 Library.MAX_BYTES = 64 * 1024 * 1024
 Library.MAX_TRACKS = 128
-local editions = {'red','blue','yellow','gold','silver','crystal'}
+local editions = {'red','blue','yellow','gold','silver','crystal','firered','leafgreen','emerald'}
 local allowed = {}; for _,id in ipairs(editions) do allowed[id]=true end
 local formats = {mp3=true,ogg=true,wav=true,flac=true}
 
@@ -29,7 +29,7 @@ local function cleanName(name, fallback)
 end
 function Library.title(label)
   return tostring(label or ''):gsub('^[Mm][Uu][Ss][Ii][Cc]_','')
-    :gsub('(%l)(%u)','%1 %2'):gsub('_',' '):upper()
+    :gsub('^MUS_',''):gsub('(%l)(%u)','%1 %2'):gsub('_',' '):upper()
 end
 local function magic(bytes, name)
   if bytes:sub(1,4)=='RIFF' and bytes:sub(9,12)=='WAVE' then return 'wav' end
@@ -54,12 +54,15 @@ Library.hash=hash
 Library.sniff=magic
 
 function Library.init(mod)
+  local function module(name) return assert(load(assert(mod:read(name..".lua")),"@"..mod.id.."/"..name))() end
+  local Gba=module("soundtrack_source").init(mod)
+  local Reader=module('imported_cache').init(mod)
   local fs=assert(love.filesystem)
   local Json=require('src.link.Json')
   local Cache=require('src.import.CacheFs')
   local Version=require('src.core.GameVersion')
   local Runtime=require('src.mods.Runtime')
-  local root=Library.ROOT
+  local root='mod_cache/'..mod.id..'/music'
   local cache=assert(mod.cache, 'AUTOBIKE+ requires the engine mod.cache API')
   local api={revision=0,notice=nil,pending=false}
   local foreign={}; local index={seq=0,tracks={}}; local loaded=false
@@ -72,11 +75,17 @@ function Library.init(mod)
     return 'music/'..tail
   end
   local function legacy(path)
-    return Library.LEGACY_ROOT..path:sub(#root+1)
+    return 'mod_data/'..mod.id..'/music'..path:sub(#root+1)
   end
   local function read(path)
     local ok,v=pcall(cache.read,cache,rel(path))
     if ok and type(v)=='string' then return v end
+    -- Test package may READ stable imports, never remove or overwrite them.
+    local relative=rel(path)
+    if mod.id~='bicycle_plus' and (relative:match('^music/index%-%a%.json$')or relative:match('^music/tracks/%x+%.[a-z]+$')) then
+      local yes,old=pcall(Cache.readAt,'mod_cache/bicycle_plus/'..relative)
+      if yes and type(old)=='string'then return old end
+    end
     -- v1.8 stores in the compatibility overlay; old non-sandbox copies may
     -- reside at the historical native path. Neither source is removed.
     ok,v=pcall(fs.read,legacy(path))
@@ -118,7 +127,16 @@ function Library.init(mod)
   end
   local function loadIndex()
     if loaded then return end
-    local a=decodeIndex(read(root..'/index-a.json'));local b=decodeIndex(read(root..'/index-b.json'))
+    -- Once this test library has a valid index, it is independent. Do not
+    -- compare its sequence numbers to a later-edited stable library's index.
+    local function ownIndex(slot)
+      local ok,bytes=pcall(cache.read,cache,'music/index-'..slot..'.json')
+      return ok and decodeIndex(bytes) or nil
+    end
+    local a,b=ownIndex('a'),ownIndex('b')
+    if not a and not b then
+      a=decodeIndex(read(root..'/index-a.json'));b=decodeIndex(read(root..'/index-b.json'))
+    end
     index=(a and b and (a.seq>b.seq and a or b)) or a or b or {format=1,seq=0,tracks={}}
     loaded=true
   end
@@ -253,10 +271,11 @@ function Library.init(mod)
   local function currentEdition() return Version.get() end
   function api.gameData(edition,game)
     if not allowed[edition] then return nil,'Unsupported game' end
+    if Reader.gba[edition]then return Gba.data(edition) end
     if edition==currentEdition() and game and game.data and game.data.audio then return game.data end
     if foreign[edition] then return foreign[edition] end
     local prefix=Version.cachePrefix(edition)
-    local metadata=Cache.readAt(prefix..'data/generated/audio.lua')
+    local metadata=Reader.read(edition,'data/generated/audio.lua')
     local audio,err=loadTable(metadata,prefix..'data/generated/audio.lua');if not audio then return nil,'IMPORT '..edition:upper()..' IN THE LAUNCHER FIRST' end
     if audio.programFile~='assets/generated/audio/programs.bin' or type(audio.bankOrder)~='table'
         or #audio.bankOrder<1 or #audio.bankOrder>128 then return nil,'Unsupported sound-program cache' end
@@ -265,7 +284,7 @@ function Library.init(mod)
       if type(bank)~='number' or bank<0 or bank>1023 or bank~=math.floor(bank) or seen[bank] then return nil,'Invalid sound-program bank list' end
       seen[bank]=true;banks[#banks+1]=bank
     end
-    local programs=Cache.readAt(prefix..audio.programFile)
+    local programs=Reader.read(edition,audio.programFile)
     if type(programs)~='string' or #programs~=#banks*16384 then return nil,'Sound-program cache incomplete' end
     -- The engine's bank cache is keyed by programFile, NOT game or prefix.
     -- Use a unique immutable file per edition+content to avoid bank collisions
@@ -285,7 +304,9 @@ function Library.init(mod)
     local rows={}
     for _,edition in ipairs(editions) do
       local present=edition==currentEdition() and game and game.data and game.data.audio
-      if not present then present=Cache.existsAt(Version.cachePrefix(edition)..'data/generated/audio.lua') end
+      if Reader.gba[edition]then
+        present=Gba.available(edition)
+      elseif not present then present=Reader.read(edition,'data/generated/audio.lua')~=nil end
       rows[#rows+1]={id=edition,label=edition:upper(),available=not not present}
     end
     return rows
@@ -295,7 +316,7 @@ function Library.init(mod)
     local rows={}
     for label,def in pairs(data.audio.songs) do
       if type(label)=='string' and label:match('^[%w_]+$') and #label<192 and type(def)=='table'
-          and label:lower()~='music_nothing' and (def.chip or def.file or (def.bank and def.address)) then
+          and label:lower()~='music_nothing' and (def.chip or def.file or (def.bank and def.address) or def.autobikeM4A) then
         rows[#rows+1]={id='game:'..edition..':'..label,name=Library.title(label),label=label,edition=edition}
       end
     end
@@ -314,6 +335,10 @@ function Library.init(mod)
     local edition,label=id:match('^game:([a-z]+):([%w_]+)$')
     local data,err=api.gameData(edition,game);if not data then return nil,err end
     local def=data.audio.songs[label]
+    if def and def.autobikeM4A then
+      return {key=id,label=label,data=data,def={file='gba:'..edition..':'..def.songId},custom=true,kind='file',edition=edition,
+        openSource=function()return Gba.open(edition,def.songId)end}
+    end
     if type(def)~='table' then return nil,'Selected track is missing from the imported game' end
     return {key=id,label=label,data=data,def=def,custom=true,kind='game',edition=edition}
   end
@@ -325,8 +350,10 @@ function Library.init(mod)
     return e and (e:upper()..': '..Library.title(l)) or 'MISSING SONG'
   end
   function api.currentEdition()return currentEdition()end
-  function api.refresh()foreign={};api.revision=api.revision+1 end
-  function api.shutdown()if api.picker then api.picker.cancel()end;api.pending=false;foreign={} end
+  function api.refresh()foreign={};Gba.refresh();api.revision=api.revision+1 end
+  api.sequenceSources=Gba
+  function api.updateSources(dt)Gba.update(dt)end
+  function api.shutdown()if api.picker then api.picker.cancel()end;api.pending=false;foreign={};Gba.dispose() end
   function api.attachPicker(picker) api.picker=picker end
   function api.chooseFile()return api.picker.choose()end
   function api.poll(dt)return api.picker.poll(dt)end

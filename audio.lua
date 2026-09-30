@@ -232,7 +232,11 @@ function Audio.init(mod, settings, songLibrary)
       choice, choiceError = nil, nil
       if songLibrary and id ~= "original" then
         local ok, value, err = pcall(songLibrary.resolve, id, game)
-        choice, choiceError = ok and value or nil, ok and err or tostring(value)
+        -- A successful resolve normally has no error. Lua's and/or idiom
+        -- would turn that nil into tostring(value), reporting a bogus table
+        -- error even though the selected song was playing successfully.
+        if ok then choice, choiceError = value, err
+        else choice, choiceError = nil, tostring(value) end
       end
     end
     return choice

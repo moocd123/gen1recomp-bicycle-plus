@@ -11,7 +11,7 @@ function Menu.init(mod, config)
     s=tostring(s or ''):upper():gsub('[^A-Z0-9 :/#%.%+%-]',' ')
     return #s>(n or 24) and s:sub(1,(n or 24)-2)..'..' or s
   end
-  local function pop(game)game.stack:pop()end
+  local function pop(game)config.menus.pop()end
   local message,openList,openDetail,openRoot,openRename,browseInbox,inboxHelp
   local menus=config.menus
   openList=function(game,opts)
@@ -118,7 +118,7 @@ function Menu.init(mod, config)
             if item.isDir then local ok,err=browser.setDirectory(item.path);if not ok then page.notice=err end;page.ready=false
             else
               local row,err=library.picker.readSelected(item.path)
-              if row then pop(game);handleImported(game,row,err,game.stack:top())
+              if row then pop(game);handleImported(game,row,err,config.menus.top())
               else page.notice=err;page.timer=0 end
             end
           end}
@@ -166,67 +166,16 @@ function Menu.init(mod, config)
       exit=function()library.cancelPick();audio.stopPreview()end})
   end
 
-  mod.content.screens:register('BicyclePlusSongName',{new=function(game,opts)
-    local row=opts.row;local chars={}
-    for c in ('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'):gmatch('.')do chars[#chars+1]=c end
-    for _,c in ipairs({'SPACE','DEL','CLEAR','SAVE','BACK'})do chars[#chars+1]=c end
-    local s={game=game,isOpaque=true,isModOptions=true,_bicycleUI=U,_bicycleMusic=true,buffer=row.name:upper():sub(1,24),replace=true,index=1}
-    function s:sgbPalettes()return U.zones()end
-    function s:key(c)
-      if c=='BACK'then pop(game)
-      elseif c=='SAVE'then
-        if self.buffer:match('%S')then local ok,err=library.rename(row.id,self.buffer)
-          if ok then row.name=self.buffer;pop(game)else self.error=err end
-        else self.error='ENTER A NAME'end
-      elseif c=='DEL'then self.buffer=self.replace and''or self.buffer:sub(1,-2);self.replace=false
-      elseif c=='CLEAR'then self.buffer='';self.replace=false
-      else c=c=='SPACE'and' 'or c
-        if self.replace then self.buffer='';self.replace=false end
-        if #self.buffer<24 then self.buffer=self.buffer..c end
-      end
-    end
-    function s:rawKey(key)
-      if key=='escape'then self:key('BACK')
-      elseif key=='return'or key=='kpenter'then self:key('SAVE')
-      elseif key=='backspace'then self:key('DEL')
-      elseif key=='delete'then self:key('CLEAR')
-      elseif key=='space'then self:key('SPACE')
-      elseif #key==1 and key:match('[%w]')then self:key(key:upper())end
-      return true
-    end
-    function s:update(dt)
-      self.timer=(self.timer or 0)+(dt or 0)
-      local input=game.input
-      if input:wasPressed('b')then pop(game);return end
-      if input:wasPressed('start')then self:key('SAVE');return end
-      if input:wasPressed('select')then self:key('DEL');return end
-      if input:wasPressed('a')then self:key(chars[self.index]);return end
-      local key=U.tapDirection(self)
-      if key then local d=key=='up'and -6 or key=='down'and 6 or key=='left'and -1 or 1;self.index=(self.index-1+d)%#chars+1 end
-    end
-    function s:pointer(e,x,y)
-      if e.phase~='pressed'and e.phase~='moved'then return true end
-      for i,c in ipairs(chars)do local r={5+(i-1)%6*25,37+math.floor((i-1)/6)*12,24,11}
-        if U.hit(x,y,r)then self.index=i;if e.phase=='pressed'and(e.source~='mouse'or e.button==1)then self:key(c)end;return true end
-      end
-      return true
-    end
-    function s:draw()
-      U.background();U.centre('SONG NAME',4)
-      if self.replace then U.focus(5,16,150,14)end
-      U.marquee(self.buffer,8,20,24,self.timer or 0)
-      for i,c in ipairs(chars)do
-        local label=({SPACE='SP',CLEAR='CLR',SAVE='OK',BACK='BACK'})[c]or c
-        U.button(label,{5+(i-1)%6*25,37+math.floor((i-1)/6)*12,24,11},self.index==i)
-      end
-      U.text(text(self.error or 'A:KEY  B:BACK  START:OK',25),5,129);U.white()
-    end
-    return s
-  end})
-  openRename=function(game,row)return Screens.push(game,'BicyclePlusSongName',{row=row})end
+  openRename=function(game,row)
+    return config.textEntry.open(game,'SONG NAME',row.name,function(name)
+      local ok,err=library.rename(row.id,name)
+      if ok then row.name=name end
+      return ok,err
+    end)
+  end
   function api.open(game)return openRoot(game)end
   function api.fileDropped(game,file)
-    local top=game and game.stack and game.stack:top()
+    local top=game and config.menus.top()
     if Runtime.safeMode or not (top and top._bicycleMusic) or library.pending
         or not file or not file.getFilename then return false end
     local ok,name=pcall(file.getFilename,file)

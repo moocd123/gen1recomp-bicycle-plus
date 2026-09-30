@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.0.0 — Unified eight-game release
+
+- **One mod, eight games:** Red, Blue, Yellow, Gold, Silver, Crystal, FireRed and LeafGreen.
+- **Native Gen 3 menus and shaded bike paint:** same layout/controls and animated three-view preview, using the current trainer's original artwork.
+- **Shared colour and audio profiles:** game-named presets are editable from any game. Each game remembers its own selected profiles; each paint part can select a different preset.
+- **Original defaults for new games:** original artwork and bicycle theme with BICYCLE routing. Starting volume levels carry over without overwriting customised profiles.
+- **Cross-generation music:** select available imported GB/GBC/GBA soundtracks from any supported game, or use local MP3/Ogg/WAV/FLAC. Missing imports are hidden rather than shown as unavailable placeholders.
+- **Native sound mode:** ROM-derived cycling music follows mono/stereo where the game offers that setting; imported recordings keep their encoded channels.
+- **Surf return repair:** a ride interrupted by Surf resumes on safe cycling-permitted land. Deliberate dismounting and Auto Bike OFF still take priority, including the tested Auto Field Moves integration.
+
+All existing automatic cycling, five-part paint, RGB/hex entry, independent volumes/filters, AREA/BICYCLE/BOTH and restart/resume features remain.
+
+## Settings, songs and local-test users
+
+
 ## 1.9.3 — Mobile song import and combined handlebars
 
 - Accept both per-request native files/markers and older required-import staging delivery.

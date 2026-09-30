@@ -1,21 +1,13 @@
-# AUTOBIKE+ v1.9.3 compatibility
+# Compatibility — AUTOBIKE+ v2.0.0
 
-The same mod ID `bicycle_plus`, API 2, six-game targets, `>=0.2.59` minimum and GitHub update source are retained. Future breaking engine changes can still require fixes.
+Requires mod API 2 and Gen1ReComp++ >=0.3.36. Targets Red/Blue/Yellow/Gold/Silver/Crystal/FireRed/LeafGreen. Permissions: engine_internals and compute; local GBA synthesis uses the latter. No remote AI or telemetry feature is added.
 
-Five runtime modules change: `import_picker.lua`, `song_library.lua` (poll dt forwarding), `main.lua` (poll dt and handlebar migration), `colours.lua` (map both existing groups to one paint key) and `colour_controls.lua` (one fewer visible row). The other ten runtime files, including playback, foreign-game audio handling, colour picker, part masks and automatic cycling, are byte-for-byte unchanged from v1.9.2.
+Do not enable the public package together with autobike_plus_test or autobike_plus_firered_beta; the manifest declares these conflicts. Existing public ID bicycle_plus is retained for automatic updates.
 
-## Native mobile importing
+Test 3 companion coverage: actual Gen 1 Auto Field Moves 1.1.5, Running Shoes 1.1.2 and Trainer Skins 0.2.0, including all three in Surf sequences. Other installed mods were not fully tested as the owner's entire latest stack. Generic hooks do not constitute a compatibility guarantee.
 
-Both current per-request completion and older shared required-import staging are supported. Current direct deliveries have a destination, byte count and MD5 marker. Old bridges can return a staged file without any completion marker. The new poller waits for stable markerless data and uses the native bounded reader; `.part` files are not consumed. A previous pending record can recover returned data, and pressing Import Song can retry a request with no callback.
+All gameplay/rendering/audio/profile modules are carried from approved Test 3; a public-upgrade module and entry integration add one-time adoption of local test data. Reads from the old test namespace are limited to its profile/music/soundtrack cache. Writes stay in the public mod cache and options-only persistence. Neither test originals nor user-selected media are deleted. Failed migration writes are reported, not silently advertised as successful.
 
-Only the current request's private staging or its owned required-import slot is cleaned. Pre-existing unrelated legacy staging prevents a new request from starting. Other imports' completion markers and ROM/save/mod staging are left alone. A timeout clears a silent wait. This does not bypass OS permissions, add a new picker to a host without one, or repair an unreadable file-provider URI.
+The v0.3.36 engine can intermittently hang while exiting after FireRed/LeafGreen switching. It was reproduced with all mods disabled. No native teardown workaround is introduced here. Restart between GBA games for conservative testing, save first, and do not force-close during writes.
 
-Desktop file-picking and file-backed/foreign-game playback code retain their prior implementations. All platform-native dialog behaviour still needs device confirmation; simulated callbacks do not prove that every phone's file provider returns a file correctly.
-
-## Appearance
-
-The old DETAILS group and HANDLEBARS group use one HANDLEBARS value. This is the union of existing conservative pixel mappings, not an expansion into uncertain rider outlines. Gen 1/Gen 2 detection, Trainer Skins treatment, frame timing and native sprite geometry are unchanged.
-
-A previously custom handlebar value wins. If handlebars were Original and Details was custom, Details supplies the combined value. If neither was custom, Original is retained. Existing WHEEL, STRIPE, CENTRE, EDGE and their remembered values are unchanged. The two old independent paints cannot both be retained visually with one control; the obsolete value remains stored as history for rollback. Reset restores all visible paint and also clears the obsolete Details paint key.
-
-No progress-save writer, save-format conversion, ROM patch, new permission or active-game switch is added. Defaults, auto-bike ON/OFF, routing, song selection, filters, volumes, native Audio and resume remain as saved. Back up progress before testing any mod update.
+Physical OS pickers, speaker/listening tests, all trainer replacements, all locations and all possible mod combinations remain outside automated guarantees. Later host/mod versions may require updates.

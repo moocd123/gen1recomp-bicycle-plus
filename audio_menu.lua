@@ -31,7 +31,7 @@ function Menu.init(mod,config)
     end}
   end
   function api.rows()
-    return {
+    local rows={
       musicMode(),
       row('riding_area_volume','AREA VOLUME',7,true),
       row('riding_area_filter','AREA FILTER',3,true),
@@ -43,6 +43,11 @@ function Menu.init(mod,config)
       {label='ON MOUNT',value=function()return get('bike_song_resume') and 'RESUME' or 'RESTART'end,
        step=function(_,s)set(s.game,'bike_song_resume',not get('bike_song_resume'))end},
     }
+    local P=mod.exports.profiles
+    if P then rows[#rows+1]={label='PROFILE',key='audio_profile',
+      value=function()return P.selection('audio'):upper()end,
+      step=function(d,s)return P.step(s.game,'audio',d)end}end
+    return rows
   end
   function api.open(game)
     return config.menus.open(game,{title='BIKE AUDIO',tag='autobike.audio',

@@ -6,9 +6,11 @@ function Controls.init(mod,config)
   local migrateSettings,defineOptions=config.migrate,config.refreshOptions
   local colourWord,centreWord=config.colourWord,config.centreWord
   local Runtime=require("src.mods.Runtime");local Screens=require("src.ui.Screens")
+  local Profiles=mod.exports.profiles
   local colourKeys={bike_colour=true,bike_stripes_colour=true,bike_centres_colour=true,
     bike_tyres_colour=true,bike_frame_colour=true,bike_handlebars_colour=true}
   local function lastCustom(game,key)
+    if Profiles then return Profiles.remembered(game,key)end
     local current=getSetting(key)
     if current~="original" then return current end
     local options=game.save and game.save.options or {}
@@ -19,6 +21,7 @@ function Controls.init(mod,config)
   end
   -- Reset paint only in one write; remembered custom colours remain available.
   local function resetColours(game)
+    if Profiles then return Profiles.resetColours(game)end
     if Runtime.safeMode or not(game and game.mods and game.save and game.save.options)then return false end
     if migrateSettings then migrateSettings(game)end
     local o=game.save.options;o.modOptions=o.modOptions or {};game.mods.modOptions=game.mods.modOptions or {}
@@ -78,8 +81,9 @@ function Controls.init(mod,config)
         {key="bike_handlebars_colour",label=function()return "HANDLEBARS"end},
         {reset=true,label=function()return "RESET "..colourWord().."S"end},
       }}
-    function self:toggle()
+    function self:toggle(dir)
       local key=self.rows[self.index].key
+      if Profiles and key then return Profiles.step(self.game,key,dir or 1)end
       if key then
         local current=getSetting(key)
         if current~="original"then
@@ -93,7 +97,8 @@ function Controls.init(mod,config)
     function self:activate()
       local row=self.rows[self.index]
       if row.reset then Screens.push(self.game,"BicyclePlusResetColours")
-      elseif getSetting(row.key)=="original"then setSetting(self.game,row.key,"original")
+      elseif (Profiles and Profiles.selection(row.key,self.game)=="original")or(not Profiles and getSetting(row.key)=="original")then
+        if Profiles then Profiles.select(self.game,row.key,"original")else setSetting(self.game,row.key,"original")end
       else picker.open(self.game,row.key,row.label(),lastCustom(self.game,row.key))end
     end
     function self:update(dt)
@@ -104,7 +109,7 @@ function Controls.init(mod,config)
       local key=UI.tapDirection(self)
       if key=="up"then self.index=(self.index-2)%#self.rows+1
       elseif key=="down"then self.index=self.index%#self.rows+1
-      elseif key=="left"or key=="right"then self:toggle()end
+      elseif key=="left"or key=="right"then self:toggle(key=="left"and -1 or 1)end
     end
     function self:pointer(e,x,y)
       if e.phase~="pressed"and e.phase~="moved"then return true end
@@ -125,9 +130,12 @@ function Controls.init(mod,config)
         local y=42+(i-1)*10
         if self.index==i then UI.focus(4,y-2,152,10);UI.marker(6,y)end
         UI.text(row.label(),16,y)
-        if row.key then UI.text(getSetting(row.key)=="original"and"ORIGINAL"or"CUSTOM",104,y)end
+        if row.key then
+          local text=Profiles and Profiles.selection(row.key,self.game):upper()or(getSetting(row.key)=="original"and"ORIGINAL"or"CUSTOM")
+          UI.text(text,154-UI.width(text),y)
+        end
       end
-      UI.centre(colours.needsColourMode(self.game)and"SEL:FULL COLOUR"or("LR:"..colourWord().." TYPE"),114)
+      UI.centre(colours.needsColourMode(self.game)and"SEL:FULL COLOUR"or(Profiles and "LR:PROFILE"or("LR:"..colourWord().." TYPE")),114)
       UI.text("A:PICK",8,129);UI.text("B:BACK",116,129)
       UI.white()
     end
